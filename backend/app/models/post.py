@@ -6,8 +6,8 @@ Schema source: docs/context/database_design.md §3.2
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Float, Text, DateTime, Index, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Boolean, Float, Text, DateTime, Index, ForeignKey, Integer, String, Uuid, JSON
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.connection import Base
@@ -19,13 +19,18 @@ class Post(Base):
     __tablename__ = "posts"
 
     post_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding: Mapped[dict | None] = mapped_column(JSONB, nullable=True, doc="Post embedding vector")
+    category: Mapped[str] = mapped_column(String(32), default="other", nullable=False)
+    embedding: Mapped[dict | None] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"),
+        nullable=True,
+        doc="Post embedding vector",
+    )
 
     # ── Credibility (Formulas 8 & 10) ──
     c_bayes: Mapped[float | None] = mapped_column(Float, nullable=True, doc="C_Bayes ∈ [0,1]")
@@ -46,6 +51,12 @@ class Post(Base):
 
     # ── Propagation ──
     radius: Mapped[float] = mapped_column(Float, default=1000.0, doc="Current propagation radius (meters)")
+    is_global: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # ── Product interaction counters (social features; not used by scoring) ──
+    shares_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    bookmarks_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    reports_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # ── Location ──
     lat: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -64,6 +75,8 @@ class Post(Base):
     __table_args__ = (
         Index("idx_posts_credibility", "c_final"),
         Index("idx_posts_created", "created_at"),
+        Index("idx_posts_category_created", "category", "created_at"),
+        Index("idx_posts_global", "is_global"),
     )
 
     def __repr__(self) -> str:

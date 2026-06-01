@@ -6,8 +6,7 @@ Schema source: docs/context/database_design.md §3.1
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Float, DateTime, Index
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Float, DateTime, Index, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.connection import Base
@@ -19,7 +18,7 @@ class User(Base):
     __tablename__ = "users"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     # ── Reliability (Formula 1) ──
@@ -43,6 +42,16 @@ class User(Base):
     lat: Mapped[float | None] = mapped_column(Float, nullable=True)
     lon: Mapped[float | None] = mapped_column(Float, nullable=True)
     location_confidence: Mapped[float] = mapped_column(Float, default=0.5, doc="L_i ∈ [0,1]")
+    city: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
+    # ── Engagement / gamification metadata (does not affect scoring) ──
+    points: Mapped[int] = mapped_column(Integer, default=0)
+    current_daily_streak: Mapped[int] = mapped_column(Integer, default=0)
+    current_weekly_streak: Mapped[int] = mapped_column(Integer, default=0)
+    best_daily_streak: Mapped[int] = mapped_column(Integer, default=0)
+    best_weekly_streak: Mapped[int] = mapped_column(Integer, default=0)
+    last_activity_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── Metadata ──
     created_at: Mapped[datetime] = mapped_column(
@@ -57,6 +66,7 @@ class User(Base):
     __table_args__ = (
         Index("idx_users_trust", "trust_score"),
         Index("idx_users_location", "lat", "lon"),
+        Index("idx_users_city_trust", "city", "trust_score"),
     )
 
     def __repr__(self) -> str:

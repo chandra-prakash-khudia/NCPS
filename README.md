@@ -98,18 +98,49 @@ Open **http://localhost:8000** in your browser. Click **▶ Run** to execute a s
 
 > **This is the recommended way to see the full system working.** The simulation server runs the complete engine pipeline (all 14 signals, graph trust, ML, spatial) and serves the frontend dashboard. No PostgreSQL, Redis, or Kafka needed.
 
-### Run the User-Facing Webapp (No Infrastructure Needed)
+### Run the User-Facing Webapp (Requires PostgreSQL)
+
+Apply database migrations first:
+
+```bash
+# From the backend/ directory, with venv activated:
+export NCPS_WEBAPP_DATABASE_URL="postgresql+psycopg2://postgres:postgres@localhost:5432/ncps"
+python -m alembic upgrade head
+```
 
 ```bash
 # From the backend/ directory, with venv activated:
 python -m webapp.server
 ```
 
-Open **http://localhost:8000** in your browser. First-time visitors see a permissions consent modal.
+Open **http://localhost:8000** in your browser.
 
-> **This is the production user interface.** Users can create posts, vote on credibility, see nearby reports on a map, and view their trust profile. Uses in-memory storage by default — auto-switches to PostgreSQL when available.
+> **This is the production user interface.** Users can create accounts, create posts, vote on credibility, see nearby reports on a map, view their trust profile, and open the Insights page for analytics, propagation tiers, and contributor leaderboard. It uses PostgreSQL-backed persistence and fails fast if the database or schema is unavailable.
+
+### User-Facing Feature Set
+
+The React user app now includes the production features expected from the NCPS proposal:
+
+- Google sign-in support through Google Identity Services, alongside email/password auth.
+- Local, global, and category-filtered feeds.
+- Hyperlocal alerts for credible or urgent reports near the user, including an alerts inbox and live SSE updates.
+- Browser notification registration with Web Push subscription storage when VAPID keys are configured.
+- Explainable AI traces on each report, showing credibility components, vote contribution weights, propagation gates, and alert gates.
+- News Map Explorer, city leaderboard, trust badges, streaks, bookmarks, sharing, and suspicious-content reporting.
+- Observability endpoint and UI for request counts, latency, product events, and deployment health.
 
 > **Note:** The simulator and webapp share port 8000. Run only one at a time. They are completely independent — one cannot affect the other.
+
+### Verify the User-Facing Webapp
+
+Run this against any live backend or frontend origin that serves `/api` routes:
+
+```bash
+# From the backend/ directory, with venv activated:
+python scripts/verify_webapp_flow.py --base-url http://localhost:8000 --users 10
+```
+
+The verifier registers 10 fresh accounts, logs them in, updates location, creates posts, records cross-user votes, checks duplicate vote blocking, validates feed/profile/activity, and confirms analytics/leaderboard responses.
 
 ### Run the Simulation (CLI — No Server)
 
@@ -496,8 +527,14 @@ The frontend dashboard provides real-time visualization of the trust system.
 
 | Variable | Default | Required |
 |----------|---------|----------|
-| `NCPS_DATABASE_URL` | `postgresql+asyncpg://...localhost/ncps` | Required only for the production API server. The simulation dashboard and webapp run without it using in-memory storage. |
+| `NCPS_WEBAPP_DATABASE_URL` | Uses `NCPS_DATABASE_URL` when unset | Required for the user-facing webapp. Use a PostgreSQL sync-driver URL such as `postgresql+psycopg2://...`. |
+| `NCPS_DATABASE_URL` | `postgresql+asyncpg://...localhost/ncps` | Required for the production API server. Also used by the webapp when `NCPS_WEBAPP_DATABASE_URL` is unset. |
 | `NCPS_REDIS_URL` | `redis://localhost:6379/0` | Required only for the production API server. Provides real-time caching for user state and post credibility lookups. |
+| `NCPS_GOOGLE_CLIENT_ID` | unset | Optional. Enables backend Google ID-token verification for `/api/auth/google`. |
+| `VITE_GOOGLE_CLIENT_ID` | unset | Optional. Enables the Google sign-in button in the React frontend. |
+| `NCPS_VAPID_PUBLIC_KEY` | unset | Optional. Enables browser push subscription registration. SSE alerts work without it. |
+| `NCPS_VAPID_PRIVATE_KEY` | unset | Optional. Deployment placeholder for Web Push delivery workers. |
+| `NCPS_AUTH_SECRET` | local dev secret | Recommended in production. Signs NCPS bearer tokens. |
 | `NCPS_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Required only for the production API server. Enables the event streaming pipeline for processing votes and posts asynchronously. |
 
 ### Simulation Settings
