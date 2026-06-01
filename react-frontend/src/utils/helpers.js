@@ -13,9 +13,9 @@ export function formatRelativeTime(isoStr) {
 
 /** Get color based on credibility score (0-1) */
 export function getCredibilityColor(score) {
-  if (score >= 0.7) return '#10b981';
+  if (score >= 0.7) return '#00ba7c';
   if (score >= 0.4) return '#f59e0b';
-  return '#ef4444';
+  return '#f4212e';
 }
 
 /** Get label for credibility score */
@@ -45,32 +45,32 @@ export function getRadiusTierLabel(km) {
 
 /** Get urgency badge info */
 export function getUrgencyInfo(urgency) {
-  if (urgency >= 0.7) return { label: 'High Urgency', color: '#ef4444' };
+  if (urgency >= 0.7) return { label: 'High Urgency', color: '#f4212e' };
   if (urgency >= 0.4) return { label: 'Medium', color: '#f59e0b' };
-  if (urgency >= 0.1) return { label: 'Low', color: '#10b981' };
+  if (urgency >= 0.1) return { label: 'Low', color: '#00ba7c' };
   return null;
 }
 
 /** Get indicator info */
 export function getIndicatorInfo(name) {
   const map = {
-    'Community Verified': { color: '#10b981', bg: 'rgba(16,185,129,0.12)', icon: '✓' },
-    'Trending':           { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: '🔥' },
-    'Frequently Discussed': { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', icon: '💬' },
-    'Recommended':        { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', icon: '⭐' },
-    'Hyperlocal':         { color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', icon: '1km' },
-    'Global':             { color: '#2563eb', bg: 'rgba(37,99,235,0.12)', icon: 'G' },
+    'Community Verified': { color: '#00ba7c', bg: 'rgba(0,186,124,0.12)', icon: 'OK' },
+    'Trending':           { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: 'T' },
+    'Frequently Discussed': { color: '#1d9bf0', bg: 'rgba(29,155,240,0.12)', icon: 'D' },
+    'Recommended':        { color: '#1d9bf0', bg: 'rgba(29,155,240,0.12)', icon: 'R' },
+    'Hyperlocal':         { color: '#06b6d4', bg: 'rgba(6,182,212,0.12)', icon: '1km' },
+    'Global':             { color: '#1d9bf0', bg: 'rgba(29,155,240,0.12)', icon: 'G' },
   };
-  return map[name] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', icon: '•' };
+  return map[name] || { color: '#71767b', bg: 'rgba(113,118,123,0.12)', icon: '.' };
 }
 
 /** Get trust badge for user */
 export function getTrustBadge(trustScore) {
   if (trustScore >= 0.9) return { label: 'Expert', color: '#f59e0b', icon: 'Top' };
-  if (trustScore >= 0.7) return { label: 'Trusted', color: '#10b981', icon: 'T' };
-  if (trustScore >= 0.5) return { label: 'Verifier', color: '#3b82f6', icon: 'V' };
-  if (trustScore >= 0.3) return { label: 'Contributor', color: '#8b5cf6', icon: 'C' };
-  return { label: 'Newcomer', color: '#94a3b8', icon: 'N' };
+  if (trustScore >= 0.7) return { label: 'Trusted', color: '#00ba7c', icon: 'T' };
+  if (trustScore >= 0.5) return { label: 'Verifier', color: '#1d9bf0', icon: 'V' };
+  if (trustScore >= 0.3) return { label: 'Contributor', color: '#536471', icon: 'C' };
+  return { label: 'Newcomer', color: '#71767b', icon: 'N' };
 }
 
 export const categoryOptions = [

@@ -11,7 +11,6 @@ import {
   Stack,
   TextField,
   Typography,
-  alpha,
   useTheme,
 } from '@mui/material';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
@@ -146,19 +145,16 @@ const AuthPage = ({ mode = 'login' }) => {
         placeItems: 'center',
         px: 2,
         py: 4,
-        background: (t) =>
-          t.palette.mode === 'dark'
-            ? 'linear-gradient(135deg, #0a0e17 0%, #122033 55%, #111827 100%)'
-            : 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 55%, #ffffff 100%)',
+        bgcolor: 'background.default',
       }}
     >
       <Card
         className="glass-surface"
         sx={{
           width: 'min(100%, 460px)',
-          p: { xs: 2.5, sm: 3.5 },
-          borderRadius: 3,
-          background: (t) => alpha(t.palette.background.paper, t.palette.mode === 'dark' ? 0.78 : 0.88),
+          p: { xs: 2, sm: 2.5 },
+          borderRadius: 2,
+          bgcolor: 'background.paper',
         }}
       >
         <Stack spacing={2.5}>

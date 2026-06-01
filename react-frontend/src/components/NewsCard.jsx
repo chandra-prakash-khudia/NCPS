@@ -84,23 +84,23 @@ const NewsCard = ({ post, showVote = true }) => {
         overflow: 'hidden',
         position: 'relative',
         cursor: 'pointer',
-        transition: 'transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease',
+        transition: 'border-color 160ms ease, background-color 160ms ease',
         '&::before': {
           content: '""',
           position: 'absolute',
           left: 0, top: 0,
           width: '100%', height: 3,
-          background: `linear-gradient(90deg, ${alpha(credColor, 0.3)}, ${credColor}, ${alpha(credColor, 0.3)})`,
+          background: credColor,
           zIndex: 2,
         },
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: (theme) => `0 20px 48px ${alpha(theme.palette.common.black, 0.3)}`,
+          borderColor: alpha(credColor, 0.5),
+          bgcolor: (theme) => alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.025 : 0.02),
         },
       }}
     >
       <CardContent
-        sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1, p: { xs: 1.8, sm: 2.2 } }}
+        sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, flexGrow: 1, p: { xs: 1.35, sm: 1.6 } }}
         onClick={() => navigate(`/post/${post_id}`)}
       >
         {/* Top row: indicators + time */}
@@ -188,7 +188,7 @@ const NewsCard = ({ post, showVote = true }) => {
                 '& .MuiLinearProgress-bar': {
                   borderRadius: 3,
                   bgcolor: credColor,
-                  transition: 'transform 0.8s ease',
+                  transition: 'none',
                 },
               }}
             />
@@ -222,7 +222,7 @@ const NewsCard = ({ post, showVote = true }) => {
       </CardContent>
 
       {/* Action bar */}
-      <Box sx={{ px: 2, pb: 1.5, pt: 0.5, borderTop: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ px: 1.5, pb: 1.15, pt: 0.75, borderTop: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box sx={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>
             {showVote && <VoteButtons postId={post_id} voteCount={vote_count} initialVote={user_vote} />}

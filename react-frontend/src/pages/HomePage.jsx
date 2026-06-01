@@ -120,27 +120,23 @@ const HomePage = () => {
   }, [posts]);
 
   return (
-    <Stack spacing={2.5}>
-      {/* Hero Card */}
+    <Stack spacing={1.8}>
+      {/* Feed controls */}
       <Card
         className="glass-surface"
         sx={{
-          p: { xs: 2.5, md: 3.5 },
+          p: { xs: 1.5, md: 2 },
           overflow: 'hidden',
           position: 'relative',
-          background: (t) =>
-            `linear-gradient(180deg, ${alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.16 : 0.08)}, ${alpha(
-              t.palette.background.paper,
-              0.96
-            )})`,
+          bgcolor: 'background.paper',
         }}
       >
-        <Stack spacing={2.5}>
+        <Stack spacing={1.7}>
           {/* Title */}
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
               <RadarOutlinedIcon color="primary" />
-              <Typography variant="h3" sx={{ fontSize: { xs: '1.4rem', sm: '1.9rem', md: '2.3rem' } }}>
+              <Typography variant="h4" sx={{ fontSize: { xs: '1.25rem', sm: '1.55rem', md: '1.75rem' } }}>
                 News Credibility Dashboard
               </Typography>
             </Stack>
@@ -156,22 +152,19 @@ const HomePage = () => {
           </Box>
 
           {/* Metrics Row */}
-          <Grid container spacing={1.2}>
+          <Grid container spacing={1}>
             {[
               { label: 'Stories', value: metrics.total, icon: <ArticleOutlinedIcon fontSize="small" /> },
               { label: 'Avg Credibility', value: `${metrics.avgCred}%`, icon: <SecurityIcon fontSize="small" /> },
               { label: 'High Trust', value: metrics.highTrust, icon: <TrendingUpIcon fontSize="small" /> },
             ].map((item) => (
               <Grid key={item.label} size={{ xs: 4 }}>
-                <Card
+                <Box
                   sx={{
-                    p: 1.5,
+                    p: 1.15,
                     borderRadius: 2,
-                    border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.2)}`,
-                    background: (t) =>
-                      t.palette.mode === 'dark'
-                        ? alpha(t.palette.background.paper, 0.45)
-                        : alpha('#ffffff', 0.55),
+                    border: (t) => `1px solid ${t.palette.divider}`,
+                    bgcolor: (t) => alpha(t.palette.text.primary, t.palette.mode === 'dark' ? 0.02 : 0.01),
                   }}
                 >
                   <Stack direction="row" spacing={0.5} alignItems="center">
@@ -183,7 +176,7 @@ const HomePage = () => {
                   <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.3 }}>
                     {item.value}
                   </Typography>
-                </Card>
+                </Box>
               </Grid>
             ))}
           </Grid>
@@ -307,8 +300,8 @@ const HomePage = () => {
           {error}
         </Alert>
       ) : posts.length === 0 ? (
-        <Card className="glass-surface" sx={{ p: 6, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 48, mb: 1 }}>📡</Typography>
+        <Card className="glass-surface" sx={{ p: { xs: 3, md: 4 }, textAlign: 'center' }}>
+          <ArticleOutlinedIcon color="action" sx={{ fontSize: 38, mb: 1 }} />
           <Typography variant="h6" color="text.secondary">No reports yet</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Be the first to report news in your area.

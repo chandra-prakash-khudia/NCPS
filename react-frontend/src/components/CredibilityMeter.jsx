@@ -10,7 +10,7 @@ const CredibilityMeter = ({ score = 0.5, size = 'medium', showLabel = true }) =>
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score * circumference);
 
-  const color = score >= 0.7 ? '#10b981' : score >= 0.4 ? '#f59e0b' : '#ef4444';
+  const color = score >= 0.7 ? '#00ba7c' : score >= 0.4 ? '#f59e0b' : '#f4212e';
   const bgColor = alpha(color, 0.15);
 
   return (
@@ -35,7 +35,6 @@ const CredibilityMeter = ({ score = 0.5, size = 'medium', showLabel = true }) =>
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 0.8s ease' }}
           />
         </svg>
         <Box

@@ -73,7 +73,7 @@ const MapPage = () => {
 
         // User marker
         const userIcon = L.divIcon({
-          html: '<div style="width:16px;height:16px;border-radius:50%;background:#6366f1;border:3px solid rgba(99,102,241,0.3);box-shadow:0 0 12px rgba(99,102,241,0.5);"></div>',
+          html: '<div style="width:16px;height:16px;border-radius:50%;background:#1d9bf0;border:3px solid rgba(29,155,240,0.3);"></div>',
           iconSize: [16, 16],
           className: '',
         });
@@ -144,10 +144,10 @@ const MapPage = () => {
         className="glass-surface"
         sx={{
           position: 'absolute',
-          bottom: 90,
-          left: 24,
+          bottom: 24,
+          left: 16,
           zIndex: 1000,
-          p: 2,
+          p: 1.5,
           width: 'auto',
           minWidth: 180,
         }}
@@ -157,10 +157,10 @@ const MapPage = () => {
         </Typography>
         <Stack spacing={0.8} sx={{ mt: 1 }}>
           {[
-            { color: '#10b981', label: 'High Credibility (≥70%)' },
+            { color: '#00ba7c', label: 'High Credibility (≥70%)' },
             { color: '#f59e0b', label: 'Medium (40-70%)' },
-            { color: '#ef4444', label: 'Low Credibility (<40%)' },
-            { color: '#6366f1', label: 'Your Location' },
+            { color: '#f4212e', label: 'Low Credibility (<40%)' },
+            { color: '#1d9bf0', label: 'Your Location' },
           ].map((item) => (
             <Stack key={item.label} direction="row" spacing={1} alignItems="center">
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
@@ -175,7 +175,7 @@ const MapPage = () => {
         ref={mapRef}
         sx={{
           width: '100%',
-          height: 'calc(100vh - 80px)',
+          height: { xs: 'calc(100vh - 86px)', md: 'calc(100vh - 28px)' },
           borderRadius: 2,
           overflow: 'hidden',
           position: 'relative',

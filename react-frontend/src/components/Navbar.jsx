@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  AppBar, Avatar, Box, Button, Container, Divider, Drawer, IconButton,
-  List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack,
-  Toolbar, Tooltip, Typography, alpha, useTheme,
+  Avatar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon,
+  ListItemText, Menu, MenuItem, Stack, Tooltip, Typography, alpha, useTheme,
 } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
@@ -22,13 +21,16 @@ import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import { useColorMode } from '../theme/AppThemeProvider';
 import { useAuth } from '../context/AuthContext';
 
+const SIDEBAR_WIDTH = 248;
+const COMPACT_SIDEBAR_WIDTH = 84;
+
 const navItems = [
   { label: 'Home', path: '/', Icon: HomeOutlinedIcon },
   { label: 'Map', path: '/map', Icon: MapOutlinedIcon },
   { label: 'Alerts', path: '/alerts', Icon: NotificationsActiveOutlinedIcon },
   { label: 'Leaderboard', path: '/leaderboard', Icon: LeaderboardOutlinedIcon },
   { label: 'Insights', path: '/insights', Icon: AnalyticsOutlinedIcon },
-  { label: 'Report News', path: '/create', Icon: PostAddOutlinedIcon },
+  { label: 'Report', path: '/create', Icon: PostAddOutlinedIcon },
   { label: 'Profile', path: '/profile', Icon: AccountCircleOutlinedIcon },
   { label: 'Settings', path: '/settings', Icon: TuneOutlinedIcon },
 ];
@@ -40,6 +42,7 @@ const Navbar = () => {
   const { toggleColorMode, mode } = useColorMode();
   const { logout, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopCompact, setDesktopCompact] = useState(false);
   const [accountAnchor, setAccountAnchor] = useState(null);
 
   const initials = useMemo(() => {
@@ -51,6 +54,14 @@ const Navbar = () => {
       .slice(0, 2)
       .toUpperCase();
   }, [user?.name]);
+
+  useEffect(() => {
+    const width = desktopCompact ? COMPACT_SIDEBAR_WIDTH : SIDEBAR_WIDTH;
+    document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
+    return () => {
+      document.documentElement.style.setProperty('--sidebar-width', `${SIDEBAR_WIDTH}px`);
+    };
+  }, [desktopCompact, mode]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -68,245 +79,264 @@ const Navbar = () => {
     navigate('/login', { replace: true });
   };
 
-  return (
-    <AppBar
-      position="sticky"
-      elevation={0}
-      sx={{
-        backdropFilter: 'blur(20px) saturate(130%)',
-        background: mode === 'dark'
-          ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.88)} 0%, ${alpha(theme.palette.background.paper, 0.8)} 100%)`
-          : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.86)} 0%, ${alpha(theme.palette.background.paper, 0.78)} 100%)`,
-        borderBottom: `1px solid ${theme.palette.divider}`,
-        boxShadow: mode === 'dark'
-          ? '0 12px 32px rgba(0,0,0,0.3)'
-          : '0 10px 28px rgba(14,37,60,0.1)',
-      }}
-    >
-      <Container maxWidth="xl">
-        <Toolbar sx={{ px: { xs: 0, sm: 1 }, minHeight: { xs: 62, sm: 72 } }}>
-          {/* Logo */}
+  const openProfile = () => {
+    setAccountAnchor(null);
+    navigate('/profile');
+  };
+
+  const navButtonSx = (active, compact = false) => ({
+    minHeight: 42,
+    mb: 0.35,
+    px: compact ? 0 : 1.25,
+    justifyContent: compact ? 'center' : 'flex-start',
+    borderRadius: 2,
+    color: active ? 'text.primary' : 'text.secondary',
+    border: '1px solid transparent',
+    bgcolor: active ? alpha(theme.palette.primary.main, 0.14) : 'transparent',
+    '&:hover': {
+      bgcolor: active
+        ? alpha(theme.palette.primary.main, 0.18)
+        : alpha(theme.palette.text.primary, 0.08),
+      color: 'text.primary',
+    },
+    '&.Mui-selected': {
+      bgcolor: alpha(theme.palette.primary.main, 0.14),
+      borderColor: alpha(theme.palette.primary.main, 0.24),
+      '&:hover': {
+        bgcolor: alpha(theme.palette.primary.main, 0.18),
+      },
+    },
+  });
+
+  const renderNavItems = (compact = false) => (
+    <List sx={{ px: compact ? 0 : 0.25, py: 1 }}>
+      {navItems.map(({ label, path, Icon }) => {
+        const active = isActive(path);
+        const item = (
+          <ListItemButton
+            key={path}
+            component={Link}
+            to={path}
+            selected={active}
+            sx={navButtonSx(active, compact)}
+          >
+            <ListItemIcon
+              sx={{
+                color: 'inherit',
+                minWidth: compact ? 0 : 34,
+                justifyContent: 'center',
+              }}
+            >
+              <Icon fontSize="small" />
+            </ListItemIcon>
+            {!compact && <ListItemText primary={label} primaryTypographyProps={{ sx: { fontWeight: active ? 800 : 650 } }} />}
+          </ListItemButton>
+        );
+
+        return compact ? (
+          <Tooltip key={path} title={label} placement="right">
+            {item}
+          </Tooltip>
+        ) : item;
+      })}
+    </List>
+  );
+
+  const renderSidebarContent = (compact = false, drawer = false) => (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={compact ? 0 : 1}
+        sx={{ px: compact ? 0 : 0.5, py: 0.5, mb: 1, minHeight: 48 }}
+      >
+        <Tooltip title={drawer ? 'Close menu' : compact ? 'Expand navigation' : 'Collapse navigation'}>
+          <IconButton
+            onClick={() => (drawer ? setMobileOpen(false) : setDesktopCompact((prev) => !prev))}
+            aria-label={drawer ? 'Close navigation' : compact ? 'Expand navigation' : 'Collapse navigation'}
+            sx={{
+              border: `1px solid ${theme.palette.divider}`,
+              bgcolor: alpha(theme.palette.text.primary, 0.04),
+              color: 'text.primary',
+              '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.08) },
+            }}
+          >
+            <MenuRoundedIcon />
+          </IconButton>
+        </Tooltip>
+
+        {!compact && (
           <Stack
             component={Link}
             to="/"
             direction="row"
-            spacing={1.25}
+            spacing={1}
             alignItems="center"
             sx={{ color: 'inherit', minWidth: 0, textDecoration: 'none' }}
           >
             <Avatar
               sx={{
-                width: { xs: 36, sm: 42 },
-                height: { xs: 36, sm: 42 },
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                width: 34,
+                height: 34,
+                bgcolor: alpha(theme.palette.primary.main, 0.18),
+                color: 'primary.main',
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.26)}`,
               }}
             >
               <VerifiedUserOutlinedIcon fontSize="small" />
             </Avatar>
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.1, fontSize: { xs: '1rem', sm: '1.1rem' } }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.1 }}>
                 NCPS
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1, display: { xs: 'none', sm: 'block' } }}>
-                Credibility & Propagation
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1, display: 'block' }}>
+                Credibility feed
               </Typography>
             </Box>
           </Stack>
+        )}
+      </Stack>
 
-          {/* Desktop Nav */}
-          <Stack direction="row" spacing={0.7} sx={{ ml: 4, display: { xs: 'none', md: 'flex' } }}>
-            {navItems.map(({ label, path, Icon }) => (
-              <Button
-                key={path}
-                component={Link}
-                to={path}
-                color={isActive(path) ? 'primary' : 'inherit'}
-                startIcon={<Icon fontSize="small" />}
-                variant={isActive(path) ? 'contained' : 'text'}
+      <Divider />
+      {renderNavItems(compact)}
+      <Box sx={{ flexGrow: 1 }} />
+      <Divider />
+
+      <Stack spacing={0.5} sx={{ py: 1, px: compact ? 0 : 0.25 }}>
+        <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} placement={compact ? 'right' : 'top'}>
+          <ListItemButton onClick={toggleColorMode} sx={navButtonSx(false, compact)}>
+            <ListItemIcon sx={{ color: 'inherit', minWidth: compact ? 0 : 34, justifyContent: 'center' }}>
+              {mode === 'dark' ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
+            </ListItemIcon>
+            {!compact && <ListItemText primary={mode === 'dark' ? 'Light mode' : 'Dark mode'} />}
+          </ListItemButton>
+        </Tooltip>
+
+        <Tooltip title="Account" placement={compact ? 'right' : 'top'}>
+          <ListItemButton
+            onClick={(event) => setAccountAnchor(event.currentTarget)}
+            sx={navButtonSx(false, compact)}
+          >
+            <ListItemIcon sx={{ color: 'inherit', minWidth: compact ? 0 : 34, justifyContent: 'center' }}>
+              <Avatar
                 sx={{
-                  borderRadius: 99,
-                  px: 2,
-                  minHeight: 38,
-                  ...(isActive(path)
-                    ? {
-                        color: '#fff',
-                        boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
-                      }
-                    : {
-                        color: 'text.secondary',
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          color: 'text.primary',
-                        },
-                      }),
+                  width: 28,
+                  height: 28,
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  bgcolor: alpha(theme.palette.primary.main, 0.18),
+                  color: 'primary.main',
                 }}
               >
-                {label}
-              </Button>
-            ))}
-          </Stack>
+                {initials}
+              </Avatar>
+            </ListItemIcon>
+            {!compact && (
+              <>
+                <ListItemText
+                  primary={user?.name || 'Account'}
+                  secondary={user?.role || 'member'}
+                  primaryTypographyProps={{ noWrap: true, sx: { fontWeight: 800 } }}
+                  secondaryTypographyProps={{ noWrap: true }}
+                />
+                <KeyboardArrowDownRoundedIcon fontSize="small" />
+              </>
+            )}
+          </ListItemButton>
+        </Tooltip>
+      </Stack>
+    </Box>
+  );
 
-          <Box sx={{ flexGrow: 1 }} />
+  return (
+    <>
+      <Box
+        component="nav"
+        sx={{
+          position: 'fixed',
+          inset: '0 auto 0 0',
+          width: desktopCompact ? COMPACT_SIDEBAR_WIDTH : SIDEBAR_WIDTH,
+          display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column',
+          borderRight: `1px solid ${theme.palette.divider}`,
+          bgcolor: 'background.paper',
+          zIndex: theme.zIndex.drawer,
+          p: 1,
+        }}
+      >
+        {renderSidebarContent(desktopCompact)}
+      </Box>
 
-          {/* Account menu */}
-          <Tooltip title="Account">
-            <Button
-              onClick={(event) => setAccountAnchor(event.currentTarget)}
-              endIcon={<KeyboardArrowDownRoundedIcon />}
-              sx={{
-                mr: 1,
-                display: { xs: 'none', sm: 'inline-flex' },
-                border: `1px solid ${theme.palette.divider}`,
-                bgcolor: alpha(theme.palette.background.paper, 0.5),
-                color: 'text.primary',
-                px: 1,
-                py: 0.45,
-                minHeight: 42,
-              }}
-            >
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Avatar
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    fontSize: '0.75rem',
-                    fontWeight: 800,
-                    bgcolor: alpha(theme.palette.primary.main, 0.18),
-                    color: 'primary.main',
-                  }}
-                >
-                  {initials}
-                </Avatar>
-                <Box sx={{ textAlign: 'left', display: { sm: 'none', lg: 'block' } }}>
-                  <Typography variant="caption" sx={{ display: 'block', lineHeight: 1.1, fontWeight: 800 }}>
-                    {user?.name || 'Account'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.1 }}>
-                    {user?.role || 'member'}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Button>
-          </Tooltip>
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 8,
+          left: 8,
+          zIndex: theme.zIndex.drawer + 2,
+          display: { xs: 'block', md: 'none' },
+        }}
+      >
+        <IconButton
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open navigation"
+          sx={{
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.08) },
+          }}
+        >
+          <MenuRoundedIcon />
+        </IconButton>
+      </Box>
 
-          <Menu
-            anchorEl={accountAnchor}
-            open={Boolean(accountAnchor)}
-            onClose={() => setAccountAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            PaperProps={{
-              sx: {
-                mt: 1,
-                minWidth: 260,
-                border: `1px solid ${theme.palette.divider}`,
-              },
-            }}
-          >
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography variant="subtitle2">{user?.name}</Typography>
-              <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
-            </Box>
-            <Divider />
-            <MenuItem
-              onClick={() => {
-                setAccountAnchor(null);
-                navigate('/profile');
-              }}
-            >
-              <ListItemIcon><AccountCircleOutlinedIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary="Profile" />
-            </MenuItem>
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon><LogoutRoundedIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary="Sign out" />
-            </MenuItem>
-          </Menu>
-
-          {/* Theme toggle */}
-          <IconButton
-            onClick={toggleColorMode}
-            sx={{
-              mr: 1,
-              border: `1px solid ${theme.palette.divider}`,
-              bgcolor: alpha(theme.palette.background.paper, 0.5),
-            }}
-          >
-            {mode === 'dark' ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
-          </IconButton>
-
-          {/* Mobile menu button */}
-          <IconButton
-            onClick={() => setMobileOpen(true)}
-            sx={{
-              display: { xs: 'inline-flex', md: 'none' },
-              border: `1px solid ${theme.palette.divider}`,
-              bgcolor: alpha(theme.palette.background.paper, 0.5),
-            }}
-            aria-label="Open navigation"
-          >
-            <MenuRoundedIcon />
-          </IconButton>
-        </Toolbar>
-      </Container>
-
-      {/* Mobile Drawer */}
       <Drawer
-        anchor="right"
+        anchor="left"
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         PaperProps={{
           sx: {
-            width: { xs: '80vw', sm: 280 },
+            width: { xs: '82vw', sm: 290 },
             maxWidth: 320,
-            p: 1.2,
-            bgcolor: alpha(theme.palette.background.paper, 0.96),
-            backdropFilter: 'blur(16px) saturate(130%)',
-            display: 'flex',
-            flexDirection: 'column',
+            p: 1,
+            bgcolor: 'background.paper',
+            borderRight: `1px solid ${theme.palette.divider}`,
           },
         }}
       >
-        <Box sx={{ p: 2, pb: 1 }}>
-          <Stack direction="row" spacing={1.2} alignItems="center">
-            <Avatar
-              sx={{
-                width: 38,
-                height: 38,
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                bgcolor: alpha(theme.palette.primary.main, 0.18),
-                color: 'primary.main',
-              }}
-            >
-              {initials}
-            </Avatar>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1 }}>{user?.name || 'NCPS'}</Typography>
-              <Typography variant="caption" color="text.secondary" noWrap>{user?.email || 'Navigation'}</Typography>
-            </Box>
-          </Stack>
-        </Box>
-        <Divider sx={{ mb: 1 }} />
-        <List>
-          {navItems.map(({ label, path, Icon }) => (
-            <ListItemButton key={path} component={Link} to={path} selected={isActive(path)}>
-              <ListItemIcon><Icon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={label} />
-            </ListItemButton>
-          ))}
-        </List>
-        <Box sx={{ flexGrow: 1 }} />
-        <Divider sx={{ mt: 1, mb: 1 }} />
-        <List>
-          <ListItemButton onClick={handleLogout}>
-            <ListItemIcon><LogoutRoundedIcon fontSize="small" /></ListItemIcon>
-            <ListItemText primary="Sign out" />
-          </ListItemButton>
-        </List>
+        {renderSidebarContent(false, true)}
       </Drawer>
-    </AppBar>
+
+      <Menu
+        anchorEl={accountAnchor}
+        open={Boolean(accountAnchor)}
+        onClose={() => setAccountAnchor(null)}
+        anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'center', horizontal: 'left' }}
+        PaperProps={{
+          sx: {
+            ml: 1,
+            minWidth: 240,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+          },
+        }}
+      >
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Typography variant="subtitle2">{user?.name}</Typography>
+          <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+        </Box>
+        <Divider />
+        <MenuItem onClick={openProfile}>
+          <ListItemIcon><AccountCircleOutlinedIcon fontSize="small" /></ListItemIcon>
+          <ListItemText primary="Profile" />
+        </MenuItem>
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon><LogoutRoundedIcon fontSize="small" /></ListItemIcon>
+          <ListItemText primary="Sign out" />
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 

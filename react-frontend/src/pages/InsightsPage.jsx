@@ -21,18 +21,18 @@ import { getCredibilityColor } from '../utils/helpers';
 const formatPercent = (value) => `${Math.round((value || 0) * 100)}%`;
 
 const bucketColor = {
-  low: '#ef4444',
+  low: '#f4212e',
   uncertain: '#f59e0b',
-  credible: '#3b82f6',
-  verified: '#10b981',
+  credible: '#1d9bf0',
+  verified: '#00ba7c',
 };
 
 const tierColor = {
   hyperlocal: '#06b6d4',
-  local: '#3b82f6',
-  district: '#8b5cf6',
+  local: '#1d9bf0',
+  district: '#00ba7c',
   regional: '#f59e0b',
-  wide: '#10b981',
+  wide: '#536471',
 };
 
 const InsightsPage = () => {
@@ -76,21 +76,21 @@ const InsightsPage = () => {
         value: overview.total_accounts,
         detail: `${overview.active_voters} active voters`,
         Icon: GroupsOutlinedIcon,
-        color: '#3b82f6',
+        color: '#1d9bf0',
       },
       {
         label: 'Reports',
         value: overview.total_posts,
         detail: `${overview.located_posts} with location`,
         Icon: AnalyticsOutlinedIcon,
-        color: '#8b5cf6',
+        color: '#00ba7c',
       },
       {
         label: 'Votes',
         value: overview.total_votes,
         detail: `${overview.vote_density} per report`,
         Icon: HowToVoteOutlinedIcon,
-        color: '#10b981',
+        color: '#00ba7c',
       },
       {
         label: 'Average Credibility',
@@ -106,13 +106,13 @@ const InsightsPage = () => {
   if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
-    <Stack spacing={2.5}>
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3.5 } }}>
+    <Stack spacing={1.8}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
           <Box>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
               <AnalyticsOutlinedIcon color="primary" />
-              <Typography variant="h3" sx={{ fontSize: { xs: '1.4rem', sm: '1.9rem', md: '2.25rem' } }}>
+              <Typography variant="h4" sx={{ fontSize: { xs: '1.25rem', sm: '1.55rem', md: '1.75rem' } }}>
                 System Insights
               </Typography>
             </Stack>
@@ -133,7 +133,7 @@ const InsightsPage = () => {
       <Grid container spacing={2}>
         {summaryCards.map(({ label, value, detail, Icon, color }) => (
           <Grid key={label} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <Card className="glass-surface" sx={{ p: 2.2, height: '100%' }}>
+            <Card className="glass-surface" sx={{ p: 1.6, height: '100%' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
@@ -165,7 +165,7 @@ const InsightsPage = () => {
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3 }, height: '100%' }}>
+          <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 }, height: '100%' }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
               <SecurityOutlinedIcon color="primary" />
               <Typography variant="h6">Credibility Distribution</Typography>
@@ -199,7 +199,7 @@ const InsightsPage = () => {
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3 }, height: '100%' }}>
+          <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 }, height: '100%' }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
               <RadarOutlinedIcon color="primary" />
               <Typography variant="h6">Propagation Tiers</Typography>
@@ -235,7 +235,7 @@ const InsightsPage = () => {
         </Grid>
       </Grid>
 
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3 } }}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
           <LeaderboardOutlinedIcon color="primary" />
           <Typography variant="h6">Trusted Contributors</Typography>

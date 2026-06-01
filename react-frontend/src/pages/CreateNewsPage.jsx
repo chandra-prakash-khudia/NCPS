@@ -93,7 +93,7 @@ const CreateNewsPage = () => {
   }
 
   return (
-    <Stack spacing={2.5} sx={{ maxWidth: 680, mx: 'auto' }}>
+    <Stack spacing={1.8} sx={{ maxWidth: 680, mx: 'auto' }}>
       <Box>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
           <PostAddOutlinedIcon color="primary" />
@@ -110,8 +110,8 @@ const CreateNewsPage = () => {
         />
       </Box>
 
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3.5 } }}>
-        <Stack spacing={2.5}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
+        <Stack spacing={1.8}>
           <Box>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
               What's happening?
@@ -141,8 +141,8 @@ const CreateNewsPage = () => {
                     sx={{
                       fontWeight: 700,
                       fontSize: '0.65rem',
-                      bgcolor: alpha('#ef4444', 0.12),
-                      color: '#ef4444',
+                      bgcolor: alpha('#f4212e', 0.12),
+                      color: '#f4212e',
                       height: 20,
                     }}
                   />

@@ -16,25 +16,25 @@ const AppThemeProvider = ({ children }) => {
     palette: {
       mode,
       ...(mode === 'dark' ? {
-        primary:    { main: '#2563eb', light: '#60a5fa', dark: '#1d4ed8' },
-        secondary:  { main: '#0f766e', light: '#2dd4bf', dark: '#115e59' },
-        success:    { main: '#10b981' },
+        primary:    { main: '#1d9bf0', light: '#60b7ff', dark: '#0f6faf' },
+        secondary:  { main: '#00ba7c', light: '#34d399', dark: '#008f60' },
+        success:    { main: '#00ba7c' },
         warning:    { main: '#f59e0b' },
-        error:      { main: '#ef4444' },
-        info:       { main: '#0284c7' },
-        background: { default: '#0f172a', paper: '#162033' },
-        text:       { primary: '#f8fafc', secondary: '#b6c2d1' },
-        divider: 'rgba(226,232,240,0.12)',
+        error:      { main: '#f4212e' },
+        info:       { main: '#1d9bf0' },
+        background: { default: '#000000', paper: '#000000' },
+        text:       { primary: '#e7e9ea', secondary: '#71767b' },
+        divider: '#2f3336',
       } : {
-        primary:    { main: '#1d4ed8', light: '#3b82f6', dark: '#1e40af' },
-        secondary:  { main: '#0f766e', light: '#14b8a6', dark: '#115e59' },
+        primary:    { main: '#1d9bf0', light: '#60b7ff', dark: '#0f6faf' },
+        secondary:  { main: '#008f60', light: '#00ba7c', dark: '#006b49' },
         success:    { main: '#059669' },
         warning:    { main: '#d97706' },
         error:      { main: '#dc2626' },
-        info:       { main: '#0369a1' },
-        background: { default: '#f4f7fb', paper: '#ffffff' },
-        text:       { primary: '#111827', secondary: '#526173' },
-        divider: 'rgba(17,24,39,0.1)',
+        info:       { main: '#1d9bf0' },
+        background: { default: '#f7f9f9', paper: '#ffffff' },
+        text:       { primary: '#0f1419', secondary: '#536471' },
+        divider: '#cfd9de',
       }),
     },
 
@@ -59,15 +59,19 @@ const AppThemeProvider = ({ children }) => {
       MuiCssBaseline: {
         styleOverrides: {
           ':root': {
-            '--border-color': mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-            '--bg-primary': mode === 'dark' ? '#111827' : '#ffffff',
-            '--primary-color': mode === 'dark' ? '#60a5fa' : '#1d4ed8',
+            '--sidebar-width': '248px',
+            '--border-color': mode === 'dark' ? '#2f3336' : '#cfd9de',
+            '--bg-primary': mode === 'dark' ? '#000000' : '#ffffff',
+            '--primary-color': '#1d9bf0',
             '--radius-lg': '8px',
             '--radius-md': '8px',
             '--radius-sm': '8px',
             '--shadow-soft': mode === 'dark'
-              ? '0 10px 28px rgba(0,0,0,0.22)'
-              : '0 10px 24px rgba(17,24,39,0.08)',
+              ? 'none'
+              : '0 1px 2px rgba(15,20,25,0.08)',
+          },
+          body: {
+            backgroundColor: mode === 'dark' ? '#000000' : '#f7f9f9',
           },
         },
       },
@@ -81,11 +85,10 @@ const AppThemeProvider = ({ children }) => {
             '&:hover': { boxShadow: 'none' },
           },
           contained: {
-            background: mode === 'dark' ? '#2563eb' : '#1d4ed8',
+            background: '#1d9bf0',
             '&:hover': {
-              background: mode === 'dark' ? '#1d4ed8' : '#1e40af',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 8px 20px rgba(37,99,235,0.24)',
+              background: '#1a8cd8',
+              boxShadow: 'none',
             },
           },
           outlined: {
@@ -97,8 +100,9 @@ const AppThemeProvider = ({ children }) => {
         styleOverrides: {
           root: {
             backgroundImage: 'none',
-            border: `1px solid ${mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+            border: `1px solid ${mode === 'dark' ? '#2f3336' : '#cfd9de'}`,
             borderRadius: 8,
+            boxShadow: 'none',
           },
         },
       },
@@ -113,7 +117,6 @@ const AppThemeProvider = ({ children }) => {
             borderRadius: 8,
             fontSize: '0.75rem',
             fontWeight: 500,
-            backdropFilter: 'blur(8px)',
           },
         },
       },

@@ -51,11 +51,11 @@ const VoteButtons = ({ postId, voteCount = 0, initialVote = null, onVoteComplete
           minWidth: 0,
           fontSize: '0.8rem',
           ...(userVote === 1 && {
-            background: alpha('#10b981', 0.15),
-            color: '#10b981',
-            border: `1px solid ${alpha('#10b981', 0.3)}`,
+            background: alpha('#00ba7c', 0.15),
+            color: '#00ba7c',
+            border: `1px solid ${alpha('#00ba7c', 0.3)}`,
             '&:hover': {
-              background: alpha('#10b981', 0.2),
+              background: alpha('#00ba7c', 0.2),
             },
           }),
         }}
@@ -74,11 +74,11 @@ const VoteButtons = ({ postId, voteCount = 0, initialVote = null, onVoteComplete
           minWidth: 0,
           fontSize: '0.8rem',
           ...(userVote === -1 && {
-            background: alpha('#ef4444', 0.15),
-            color: '#ef4444',
-            border: `1px solid ${alpha('#ef4444', 0.3)}`,
+            background: alpha('#f4212e', 0.15),
+            color: '#f4212e',
+            border: `1px solid ${alpha('#f4212e', 0.3)}`,
             '&:hover': {
-              background: alpha('#ef4444', 0.2),
+              background: alpha('#f4212e', 0.2),
             },
           }),
         }}

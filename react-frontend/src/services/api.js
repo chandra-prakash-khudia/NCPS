@@ -20,7 +20,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || '';
+    const isAuthAttempt = /^\/auth\/(login|register|google)/.test(url);
+    if (error.response?.status === 401 && !isAuthAttempt) {
       window.dispatchEvent(new Event('ncps-auth-expired'));
     }
     return Promise.reject(error);

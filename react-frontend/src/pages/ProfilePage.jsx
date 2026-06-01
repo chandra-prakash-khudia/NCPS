@@ -50,36 +50,27 @@ const ProfilePage = () => {
   const weight = user.weight;
 
   return (
-    <Stack spacing={2.5} sx={{ maxWidth: 720, mx: 'auto' }}>
+    <Stack spacing={1.8} sx={{ maxWidth: 720, mx: 'auto' }}>
       {/* Header Card */}
       <Card
         className="glass-surface"
         sx={{
-          p: { xs: 3, md: 4 },
+          p: { xs: 2, md: 2.5 },
           position: 'relative',
           overflow: 'hidden',
-          background: (t) =>
-            `linear-gradient(135deg, ${alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.2 : 0.1)}, ${alpha(
-              t.palette.secondary.main, 0.12
-            )})`,
-          '&::after': {
-            content: '""', position: 'absolute', width: 200, height: 200,
-            right: -60, top: -60, borderRadius: '50%',
-            background: (t) => alpha(t.palette.primary.main, 0.15),
-            filter: 'blur(10px)', pointerEvents: 'none',
-          },
+          bgcolor: 'background.paper',
         }}
       >
         <Stack direction="row" spacing={2} alignItems="center">
           <Box
             sx={{
               width: 64, height: 64, borderRadius: '50%',
-              background: `linear-gradient(135deg, #6366f1, #8b5cf6)`,
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.16),
+              border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.28)}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(99,102,241,0.3)',
             }}
           >
-            <AccountCircleOutlinedIcon sx={{ color: '#fff', fontSize: 32 }} />
+            <AccountCircleOutlinedIcon color="primary" sx={{ fontSize: 32 }} />
           </Box>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 800 }}>
@@ -101,7 +92,7 @@ const ProfilePage = () => {
         </Stack>
 
         {/* Stats row */}
-        <Stack direction="row" spacing={3} sx={{ mt: 3 }}>
+        <Stack direction="row" spacing={2.5} sx={{ mt: 2 }}>
           {[
             { label: 'Votes', value: user.vote_count },
             { label: 'Posts', value: user.post_count },
@@ -116,36 +107,35 @@ const ProfilePage = () => {
       </Card>
 
       {/* Weight Decomposition */}
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3.5 } }}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
           <VerifiedUserOutlinedIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
           Weight Decomposition
         </Typography>
         <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} flexWrap="wrap" useFlexGap sx={{ py: 2 }}>
           {[
-            { label: 'Trust (T)', value: user.trust_score, color: '#3b82f6' },
+            { label: 'Trust (T)', value: user.trust_score, color: '#1d9bf0' },
             { label: '×', isOp: true },
-            { label: '1 − Anom', value: 1 - user.anomaly_score, color: user.anomaly_score > 0.3 ? '#ef4444' : '#10b981' },
+            { label: '1 − Anom', value: 1 - user.anomaly_score, color: user.anomaly_score > 0.3 ? '#f4212e' : '#00ba7c' },
             { label: '×', isOp: true },
-            { label: 'Exp', value: user.exp_score, color: '#8b5cf6' },
+            { label: 'Exp', value: user.exp_score, color: '#00ba7c' },
             { label: '=', isOp: true },
-            { label: 'Weight', value: weight, color: '#6366f1', isResult: true },
+            { label: 'Weight', value: weight, color: '#1d9bf0', isResult: true },
           ].map((item, i) =>
             item.isOp ? (
               <Typography key={i} sx={{ fontSize: 24, color: 'text.secondary', fontWeight: 300 }}>
                 {item.label}
               </Typography>
             ) : (
-              <Card
+              <Box
                 key={i}
                 sx={{
                   p: 1.5, minWidth: 90, textAlign: 'center',
                   border: item.isResult
-                    ? `2px solid ${alpha('#6366f1', 0.4)}`
+                    ? `2px solid ${alpha('#1d9bf0', 0.42)}`
                     : `1px solid ${alpha(item.color, 0.15)}`,
                   borderRadius: 2,
                   bgcolor: alpha(item.color, 0.05),
-                  ...(item.isResult && { boxShadow: `0 0 20px ${alpha('#6366f1', 0.15)}` }),
                 }}
               >
                 <Typography sx={{ fontFamily: "'JetBrains Mono'", fontWeight: 700, fontSize: '1.2rem', color: item.color }}>
@@ -154,14 +144,14 @@ const ProfilePage = () => {
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.6rem' }}>
                   {item.label}
                 </Typography>
-              </Card>
+              </Box>
             )
           )}
         </Stack>
       </Card>
 
       {/* Account Activity */}
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3.5 } }}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 700 }}>
           Account Activity
         </Typography>
@@ -225,7 +215,7 @@ const ProfilePage = () => {
       </Card>
 
       {/* Signal Bars */}
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 3.5 } }}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 700 }}>
           Trust Signals
         </Typography>
@@ -234,7 +224,7 @@ const ProfilePage = () => {
             const val = user[sig.key] || 0;
             const displayVal = sig.invert ? 1 - val : val;
             const color = sig.invert
-              ? (val > 0.3 ? '#ef4444' : val > 0.1 ? '#f59e0b' : '#10b981')
+              ? (val > 0.3 ? '#f4212e' : val > 0.1 ? '#f59e0b' : '#00ba7c')
               : getCredibilityColor(val);
             return (
               <Box key={sig.key}>
@@ -253,7 +243,7 @@ const ProfilePage = () => {
                   sx={{
                     height: 8, borderRadius: 4,
                     bgcolor: alpha(color, 0.1),
-                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: color, transition: 'transform 0.8s ease' },
+                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: color, transition: 'none' },
                   }}
                 />
               </Box>

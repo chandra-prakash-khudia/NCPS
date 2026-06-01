@@ -11,7 +11,7 @@ import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import BookmarkBorderOutlinedIcon from '@mui/icons-material/BookmarkBorderOutlined';
 import BookmarkRoundedIcon from '@mui/icons-material/BookmarkRounded';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
-import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { toast } from 'react-toastify';
 import CredibilityMeter from '../components/CredibilityMeter';
 import VoteButtons from '../components/VoteButtons';
@@ -97,7 +97,7 @@ const PostDetailPage = () => {
   };
 
   return (
-    <Stack spacing={2.5}>
+    <Stack spacing={1.8}>
       {/* Back button */}
       <Button
         startIcon={<ArrowBackRoundedIcon />}
@@ -111,12 +111,12 @@ const PostDetailPage = () => {
       <Card
         className="glass-surface"
         sx={{
-          p: { xs: 2.5, md: 4 },
+          p: { xs: 2, md: 2.5 },
           position: 'relative',
           '&::before': {
             content: '""', position: 'absolute', left: 0, top: 0,
             width: '100%', height: 4,
-            background: `linear-gradient(90deg, ${alpha(credColor, 0.3)}, ${credColor}, ${alpha(credColor, 0.3)})`,
+            background: credColor,
           },
         }}
       >
@@ -174,7 +174,7 @@ const PostDetailPage = () => {
       </Card>
 
       {/* Credibility Breakdown */}
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 4 } }}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 700 }}>
           <VerifiedOutlinedIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
           Credibility Analysis
@@ -248,7 +248,7 @@ const PostDetailPage = () => {
                   sx={{
                     height: 8, borderRadius: 4,
                     bgcolor: 'rgba(59,130,246,0.1)',
-                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: '#3b82f6' },
+                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: '#1d9bf0' },
                   }}
                 />
               </Box>
@@ -258,7 +258,7 @@ const PostDetailPage = () => {
       </Card>
 
       {/* Propagation & Location */}
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 4 } }}>
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
           <RadarOutlinedIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
           Propagation & Location
@@ -267,7 +267,7 @@ const PostDetailPage = () => {
           <Chip
             icon={<RadarOutlinedIcon />}
             label={`${getRadiusTierLabel((post.radius || 1000) / 1000)} — ${formatDistance(post.radius)}`}
-            sx={{ fontWeight: 700, bgcolor: alpha('#8b5cf6', 0.12), color: '#8b5cf6' }}
+            sx={{ fontWeight: 700, bgcolor: alpha(credColor, 0.12), color: credColor }}
           />
           {post.lat && post.lon && (
             <Chip
@@ -288,11 +288,11 @@ const PostDetailPage = () => {
         </Stack>
       </Card>
 
-      {/* Explainable AI / decision trace */}
-      <Card className="glass-surface" sx={{ p: { xs: 2.5, md: 4 } }}>
+      {/* Decision trace */}
+      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-          <PsychologyOutlinedIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-          Explainable AI Trace
+          <FactCheckOutlinedIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+          Decision Trace
         </Typography>
         {!explanation ? (
           <Typography color="text.secondary">Explanation is loading.</Typography>

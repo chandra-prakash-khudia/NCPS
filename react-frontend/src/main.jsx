@@ -23,10 +23,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             pauseOnHover
             theme="dark"
             toastStyle={{
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(14px)',
-              background: 'rgba(17,24,39,0.92)',
+              borderRadius: 8,
+              border: '1px solid #2f3336',
+              background: '#000000',
             }}
           />
         </AuthProvider>
