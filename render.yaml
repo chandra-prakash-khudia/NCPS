@@ -1,0 +1,22 @@
+# Render Blueprint — Postgres database "NCPS" must already exist in the same region.
+# After deploy, set NCPS_GOOGLE_CLIENT_ID in the Render dashboard.
+services:
+  - type: web
+    name: ncps-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m alembic upgrade head && uvicorn webapp:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: NCPS_WEBAPP_DATABASE_URL
+        fromDatabase:
+          name: NCPS
+          property: connectionString
+      - key: NCPS_AUTH_SECRET
+        generateValue: true
+      - key: NCPS_GOOGLE_CLIENT_ID
+        sync: false
