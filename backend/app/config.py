@@ -5,11 +5,16 @@ No magic numbers anywhere else in the codebase.
 Source of truth: docs/context/mathematical_formula.md, pseudo_algorithm.md
 """
 
-from pydantic_settings import BaseSettings
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class NCPSConfig(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="NCPS_",
+        env_file=".env",
+        extra="ignore",
+    )
     """Central configuration for all NCPS system parameters."""
 
     # ──────────────────────────────────────────────
@@ -348,10 +353,6 @@ class NCPSConfig(BaseSettings):
         default="ncps-events",
         description="Kafka topic for incoming events.",
     )
-
-    class Config:
-        env_prefix = "NCPS_"
-        env_file = ".env"
 
 
 # Singleton instance

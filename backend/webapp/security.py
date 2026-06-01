@@ -14,6 +14,7 @@ import json
 import os
 import secrets
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
@@ -166,11 +167,26 @@ def verify_google_id_token(id_token: str, client_id: str | None = None) -> dict[
     try:
         with urllib.request.urlopen(url, timeout=5) as response:
             payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        try:
+            error_payload = json.loads(detail)
+            message = error_payload.get("error_description") or error_payload.get("error")
+        except json.JSONDecodeError:
+            message = detail.strip() or exc.reason
+        raise GoogleAuthError(f"Google token verification failed: {message}") from exc
     except Exception as exc:
-        raise GoogleAuthError("Google token verification failed") from exc
+        raise GoogleAuthError(f"Google token verification failed: {exc}") from exc
+
+    if payload.get("error"):
+        raise GoogleAuthError(
+            payload.get("error_description") or payload.get("error") or "Invalid Google token"
+        )
 
     if payload.get("aud") != expected_audience:
-        raise GoogleAuthError("Google token audience mismatch")
+        raise GoogleAuthError(
+            "Google token audience mismatch. Check NCPS_GOOGLE_CLIENT_ID matches VITE_GOOGLE_CLIENT_ID."
+        )
     if str(payload.get("email_verified", "")).lower() not in {"true", "1"}:
         raise GoogleAuthError("Google account email is not verified")
     if not payload.get("sub") or not payload.get("email"):
