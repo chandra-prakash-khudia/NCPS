@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+import uuid
 import asyncio
 import json
 import time
@@ -23,7 +24,9 @@ from dotenv import load_dotenv
 _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(_backend_dir, ".env"))
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from pathlib import Path
+
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -101,6 +104,30 @@ class CreatePostRequest(BaseModel):
     category: str | None = Field(None, max_length=32)
     lat: float | None = None
     lon: float | None = None
+    image_url: str | None = Field(None, max_length=2048)
+    source_url: str | None = Field(None, max_length=2048)
+
+    @field_validator("source_url")
+    @classmethod
+    def validate_source_url(cls, value: str | None) -> str | None:
+        if value is None or not str(value).strip():
+            return None
+        cleaned = str(value).strip()
+        if not cleaned.startswith(("http://", "https://")):
+            raise ValueError("Source link must start with http:// or https://")
+        return cleaned
+
+    @field_validator("image_url")
+    @classmethod
+    def validate_image_url(cls, value: str | None) -> str | None:
+        if value is None or not str(value).strip():
+            return None
+        cleaned = str(value).strip()
+        if cleaned.startswith("/api/uploads/"):
+            return cleaned
+        if cleaned.startswith(("http://", "https://")):
+            return cleaned
+        raise ValueError("Invalid image URL")
 
 
 class VoteRequest(BaseModel):
@@ -407,13 +434,67 @@ def observability_metrics(account: AuthAccount = Depends(get_current_account)):
     }
 
 
+UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+
+@app.post("/api/post/upload-image")
+async def upload_post_image(
+    file: UploadFile = File(...),
+    account: AuthAccount = Depends(get_current_account),
+):
+    del account  # auth gate only
+    content_type = (file.content_type or "").lower()
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Image must be JPEG, PNG, WebP, or GIF.")
+    data = await file.read()
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=400, detail="Image must be 5 MB or smaller.")
+    ext = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+    }[content_type]
+    filename = f"{uuid.uuid4().hex}{ext}"
+    path = UPLOAD_DIR / filename
+    path.write_bytes(data)
+    return {"image_url": f"/api/uploads/{filename}"}
+
+
+@app.get("/api/uploads/{filename}")
+def get_uploaded_image(filename: str):
+    if not re.fullmatch(r"[a-f0-9]{32}\.(jpg|png|webp|gif)", filename):
+        raise HTTPException(status_code=404, detail="Not found")
+    path = UPLOAD_DIR / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    media_type = {
+        ".jpg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+        ".gif": "image/gif",
+    }[path.suffix]
+    return FileResponse(path, media_type=media_type)
+
+
 @app.post("/api/post/create")
 def create_post(
     req: CreatePostRequest,
     account: AuthAccount = Depends(get_current_account),
     store: WebappStore = Depends(get_store),
 ):
-    post = store.create_post(str(account.user_id), req.content, req.lat, req.lon, req.category)
+    post = store.create_post(
+        str(account.user_id),
+        req.content,
+        req.lat,
+        req.lon,
+        req.category,
+        image_url=req.image_url,
+        source_url=req.source_url,
+    )
     alerts = [store.alert_to_dict(alert) for alert in store.generate_alerts_for_post(post.post_id, source="post")]
     publish_alerts(alerts)
     record_metric_event("post_created", user_id=str(account.user_id), post_id=str(post.post_id), alerts=len(alerts))

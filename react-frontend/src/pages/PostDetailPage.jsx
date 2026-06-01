@@ -23,6 +23,7 @@ import {
   formatRelativeTime, getCredibilityColor, getCredibilityLabel,
   getIndicatorInfo, getUrgencyInfo, formatDistance, getRadiusTierLabel,
 } from '../utils/helpers';
+import { parseArticleContent, resolveMediaUrl } from '../utils/articleFormat';
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -57,6 +58,8 @@ const PostDetailPage = () => {
   const credLabel = getCredibilityLabel(post.credibility);
   const urgInfo = getUrgencyInfo(post.urgency);
   const [firstReason] = post.why_shown || [];
+  const { headline, deck, paragraphs } = parseArticleContent(post.content);
+  const imageSrc = resolveMediaUrl(post.image_url);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.post_id}`;
@@ -146,10 +149,45 @@ const PostDetailPage = () => {
             />
           </Stack>
 
-          {/* Content */}
+          {imageSrc && (
+            <Box
+              component="img"
+              src={imageSrc}
+              alt=""
+              sx={{ width: '100%', maxHeight: 360, objectFit: 'cover', borderRadius: 2 }}
+            />
+          )}
+
           <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.5 }}>
-            {post.content}
+            {headline}
           </Typography>
+
+          {deck && (
+            <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+              {deck}
+            </Typography>
+          )}
+
+          {paragraphs.map((paragraph, index) => (
+            <Typography key={index} variant="body1" sx={{ lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+              {paragraph}
+            </Typography>
+          ))}
+
+          {post.source_url && (
+            <Typography variant="body2">
+              Source:{' '}
+              <Box
+                component="a"
+                href={post.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ color: 'primary.main', fontWeight: 600 }}
+              >
+                {post.source_url}
+              </Box>
+            </Typography>
+          )}
 
           {/* Author */}
           <Stack direction="row" spacing={1} alignItems="center">

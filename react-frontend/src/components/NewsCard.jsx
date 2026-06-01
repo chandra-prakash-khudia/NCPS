@@ -16,14 +16,17 @@ import CredibilityMeter from './CredibilityMeter';
 import VoteButtons from './VoteButtons';
 import { bookmarkPost, reportPost, sharePost, unbookmarkPost } from '../services/api';
 import { formatRelativeTime, getCredibilityColor, getIndicatorInfo, getUrgencyInfo, formatDistance, getRadiusTierLabel } from '../utils/helpers';
+import { parseArticleContent, resolveMediaUrl } from '../utils/articleFormat';
 
 const NewsCard = ({ post, showVote = true }) => {
   const navigate = useNavigate();
   const {
     post_id, content, credibility, urgency, indicators = [],
     distance_m, radius, vote_count, n_effective,
-    created_at, user_vote, is_bookmarked,
+    created_at, user_vote, is_bookmarked, image_url,
   } = post;
+  const { headline } = parseArticleContent(content);
+  const imageSrc = resolveMediaUrl(image_url);
   const [saved, setSaved] = React.useState(Boolean(is_bookmarked));
   const [reporting, setReporting] = React.useState(false);
 
@@ -144,7 +147,15 @@ const NewsCard = ({ post, showVote = true }) => {
           </Typography>
         </Stack>
 
-        {/* Content */}
+        {imageSrc && (
+          <Box
+            component="img"
+            src={imageSrc}
+            alt=""
+            sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1.5 }}
+          />
+        )}
+
         <Typography
           variant="body1"
           sx={{
@@ -156,7 +167,7 @@ const NewsCard = ({ post, showVote = true }) => {
             overflow: 'hidden',
           }}
         >
-          {content}
+          {headline}
         </Typography>
 
         {/* Credibility bar */}

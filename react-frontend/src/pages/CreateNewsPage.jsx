@@ -1,28 +1,42 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box, Button, Card, Chip, MenuItem, Select, Stack, TextField, Typography, alpha,
 } from '@mui/material';
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import NearMeOutlinedIcon from '@mui/icons-material/NearMeOutlined';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { createPost } from '../services/api';
+import { createPost, uploadPostImage } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { categoryOptions, detectUrgency, getUrgencyInfo } from '../utils/helpers';
+import { buildArticleContent } from '../utils/articleFormat';
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const CreateNewsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [content, setContent] = useState('');
+  const [headline, setHeadline] = useState('');
+  const [summary, setSummary] = useState('');
+  const [body, setBody] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [location, setLocation] = useState(null);
   const [locationStatus, setLocationStatus] = useState('idle');
-  const [category, setCategory] = useState('other');
+  const [category, setCategory] = useState('civic');
 
-  const { maxUrgency, keywords: urgencyKws } = detectUrgency(content);
-  const urgInfo = getUrgencyInfo(maxUrgency);
+  const draftText = useMemo(
+    () => [headline, summary, body].filter(Boolean).join(' '),
+    [headline, summary, body],
+  );
+  const { keywords: urgencyKws } = detectUrgency(draftText);
+  const urgInfo = getUrgencyInfo(detectUrgency(draftText).maxUrgency);
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -36,27 +50,94 @@ const CreateNewsPage = () => {
         setLocationStatus('detected');
       },
       () => setLocationStatus('denied'),
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
   React.useEffect(() => { requestLocation(); }, []);
 
-  const handleSubmit = async () => {
-    if (content.trim().length < 10) {
-      toast.error('Please provide at least 10 characters.');
+  React.useEffect(() => () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+  }, [imagePreview]);
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file.');
       return;
     }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error('Image must be 5 MB or smaller.');
+      return;
+    }
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const resetForm = () => {
+    setHeadline('');
+    setSummary('');
+    setBody('');
+    setSourceUrl('');
+    clearImage();
+    setSuccess(false);
+  };
+
+  const handleSubmit = async () => {
+    if (headline.trim().length < 12) {
+      toast.error('Headline needs at least 12 characters.');
+      return;
+    }
+    if (body.trim().length < 40) {
+      toast.error('Story body needs at least 40 characters.');
+      return;
+    }
+    let normalizedSource = sourceUrl.trim();
+    if (normalizedSource) {
+      try {
+        const parsed = new URL(normalizedSource);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          throw new Error('invalid');
+        }
+        normalizedSource = parsed.toString();
+      } catch {
+        toast.error('Source link must be a valid http:// or https:// URL.');
+        return;
+      }
+    } else {
+      normalizedSource = '';
+    }
+
     setLoading(true);
     try {
-      await createPost({
-        content: content.trim(),
+      let imageUrl = null;
+      if (imageFile) {
+        const uploadRes = await uploadPostImage(imageFile);
+        imageUrl = uploadRes.data.image_url;
+      }
+      const content = buildArticleContent(headline, summary, body);
+      const res = await createPost({
+        content,
         category,
         lat: location?.lat,
         lon: location?.lon,
+        image_url: imageUrl || undefined,
+        source_url: normalizedSource || undefined,
       });
-      setSuccess(true);
       toast.success('Report submitted! The community will verify its credibility.');
+      if (res.data?.post_id) {
+        navigate(`/post/${res.data.post_id}`);
+        return;
+      }
+      setSuccess(true);
     } catch (err) {
       toast.error('Failed to submit: ' + (err.response?.data?.detail || err.message));
     } finally {
@@ -81,10 +162,7 @@ const CreateNewsPage = () => {
           <Button variant="contained" onClick={() => navigate('/')}>
             View Feed
           </Button>
-          <Button
-            variant="outlined"
-            onClick={() => { setContent(''); setSuccess(false); }}
-          >
+          <Button variant="outlined" onClick={resetForm}>
             New Report
           </Button>
         </Stack>
@@ -100,7 +178,7 @@ const CreateNewsPage = () => {
           <Typography variant="h4">Create Report</Typography>
         </Stack>
         <Typography variant="body2" color="text.secondary">
-          Report an incident. The community will verify its credibility through weighted voting.
+          Write a headline and story. Photo and source link are optional.
         </Typography>
         <Chip
           label={`Reporting as ${user?.name || 'NCPS user'}`}
@@ -112,49 +190,97 @@ const CreateNewsPage = () => {
 
       <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Stack spacing={1.8}>
+          <TextField
+            label="Headline"
+            fullWidth
+            required
+            value={headline}
+            onChange={(e) => setHeadline(e.target.value)}
+            placeholder="Clear headline summarizing what happened"
+            inputProps={{ maxLength: 220 }}
+          />
+
+          <TextField
+            label="Summary (optional)"
+            fullWidth
+            multiline
+            minRows={2}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="Short context — who, what, when."
+          />
+
+          <TextField
+            label="Story"
+            fullWidth
+            required
+            multiline
+            minRows={6}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Full report in short paragraphs. Separate paragraphs with a blank line."
+            helperText={`${body.length} characters`}
+          />
+
           <Box>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              What's happening?
+              Photo (optional)
             </Typography>
-            <TextField
-              multiline
-              rows={5}
-              fullWidth
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Describe the incident in detail. Include location, what you observed, and any relevant context..."
-              inputProps={{ maxLength: 5000 }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  fontSize: '0.95rem',
-                },
-              }}
-            />
-            <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.5 }}>
-              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                {urgencyKws.map((kw) => (
-                  <Chip
-                    key={kw}
-                    label={kw}
-                    size="small"
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: '0.65rem',
-                      bgcolor: alpha('#f4212e', 0.12),
-                      color: '#f4212e',
-                      height: 20,
-                    }}
-                  />
-                ))}
-              </Stack>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <Button variant="outlined" component="label" startIcon={<ImageOutlinedIcon />} size="small">
+                {imageFile ? 'Change photo' : 'Upload photo'}
+                <input type="file" hidden accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleImageChange} />
+              </Button>
+              {imageFile && (
+                <Button size="small" onClick={clearImage}>
+                  Remove
+                </Button>
+              )}
               <Typography variant="caption" color="text.secondary">
-                {content.length} / 5000
+                JPEG, PNG, WebP, or GIF · max 5 MB
               </Typography>
             </Stack>
+            {imagePreview && (
+              <Box
+                component="img"
+                src={imagePreview}
+                alt="Preview"
+                sx={{ mt: 1.5, maxWidth: '100%', maxHeight: 220, borderRadius: 2, border: (t) => `1px solid ${t.palette.divider}` }}
+              />
+            )}
           </Box>
 
-          {/* Urgency preview */}
+          <TextField
+            label="Source link (optional)"
+            fullWidth
+            value={sourceUrl}
+            onChange={(e) => setSourceUrl(e.target.value)}
+            placeholder="https://example.com/article"
+            InputProps={{
+              startAdornment: <LinkOutlinedIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+            }}
+            helperText="Official page, news outlet, or document — not required"
+          />
+
+          {urgencyKws.length > 0 && (
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+              {urgencyKws.map((kw) => (
+                <Chip
+                  key={kw}
+                  label={kw}
+                  size="small"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.65rem',
+                    bgcolor: alpha('#f4212e', 0.12),
+                    color: '#f4212e',
+                    height: 20,
+                  }}
+                />
+              ))}
+            </Stack>
+          )}
+
           {urgInfo && (
             <Card
               sx={{
@@ -184,7 +310,6 @@ const CreateNewsPage = () => {
             </Select>
           </Box>
 
-          {/* Location */}
           <Box>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
               Location
@@ -206,8 +331,8 @@ const CreateNewsPage = () => {
                   {locationStatus === 'detected'
                     ? `📍 ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}`
                     : locationStatus === 'detecting'
-                    ? 'Detecting location...'
-                    : '📍 Location unavailable — post will have no location'}
+                      ? 'Detecting location...'
+                      : '📍 Location unavailable — post will have no location'}
                 </Typography>
               </Stack>
             </Card>
@@ -217,7 +342,7 @@ const CreateNewsPage = () => {
             variant="contained"
             size="large"
             fullWidth
-            disabled={loading || content.trim().length < 10}
+            disabled={loading || headline.trim().length < 12 || body.trim().length < 40}
             onClick={handleSubmit}
             sx={{ py: 1.5, fontSize: '1rem' }}
           >

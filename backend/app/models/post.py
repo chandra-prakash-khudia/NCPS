@@ -58,6 +58,10 @@ class Post(Base):
     bookmarks_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     reports_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+    # ── Media & attribution (product metadata; not used by scoring) ──
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # ── Location ──
     lat: Mapped[float | None] = mapped_column(Float, nullable=True)
     lon: Mapped[float | None] = mapped_column(Float, nullable=True)

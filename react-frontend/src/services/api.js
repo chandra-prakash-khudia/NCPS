@@ -118,6 +118,14 @@ export const updatePreferences = (data) =>
 export const createPost = (data) =>
   api.post('/post/create', data);
 
+export const uploadPostImage = (file) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post('/post/upload-image', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
 export const votePost = (data) =>
   api.post('/post/vote', data);
 

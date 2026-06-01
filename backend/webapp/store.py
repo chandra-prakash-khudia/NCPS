@@ -252,12 +252,16 @@ class WebappStore:
         lat: float | None,
         lon: float | None,
         category: str | None = None,
+        image_url: str | None = None,
+        source_url: str | None = None,
     ) -> Post:
         user = self.get_or_create_user(user_id)
         post = Post(
             user_id=user.user_id,
             content=content,
             category=self.normalize_category(category or self.infer_category(content)),
+            image_url=image_url,
+            source_url=source_url,
             c_bayes=0.5,
             c_final=0.5,
             variance=0.0,
@@ -475,6 +479,8 @@ class WebappStore:
             "author_user_id": str(post.user_id),
             "author_name": account.name if account else "Community member",
             "content": post.content,
+            "image_url": post.image_url,
+            "source_url": post.source_url,
             "category": post.category,
             "credibility": round(credibility, 3),
             "c_bayes": round(_score(post.c_bayes, 0.5), 3),
