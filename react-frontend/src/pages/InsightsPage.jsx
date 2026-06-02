@@ -1,41 +1,45 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Box, Card, Chip, Grid, LinearProgress, Stack, Typography, alpha,
+  Alert, Box, Card, Chip, Grid, LinearProgress, Stack, Typography, alpha, useTheme,
 } from '@mui/material';
-import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
-import HowToVoteOutlinedIcon from '@mui/icons-material/HowToVoteOutlined';
-import LeaderboardOutlinedIcon from '@mui/icons-material/LeaderboardOutlined';
-import RadarOutlinedIcon from '@mui/icons-material/RadarOutlined';
-import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
-import TrendingUpOutlinedIcon from '@mui/icons-material/TrendingUpOutlined';
-import LoadingSpinner from '../components/LoadingSpinner';
 import {
-  getAnalyticsOverview,
-  getCredibilityDistribution,
-  getLeaderboard,
-  getPropagationStats,
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  RadialBarChart, RadialBar, PolarAngleAxis,
+} from 'recharts';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import HowToVoteRoundedIcon from '@mui/icons-material/HowToVoteRounded';
+import LeaderboardRoundedIcon from '@mui/icons-material/LeaderboardRounded';
+import RadarRoundedIcon from '@mui/icons-material/RadarRounded';
+import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
+import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
+import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import {
+  getAnalyticsOverview, getCredibilityDistribution, getLeaderboard, getPropagationStats,
 } from '../services/api';
-import { getCredibilityColor } from '../utils/helpers';
+import { getCredibilityColor, CRED_GREEN, CRED_AMBER, CRED_RED, BRAND_INDIGO, CYAN } from '../utils/helpers';
 
 const formatPercent = (value) => `${Math.round((value || 0) * 100)}%`;
 
-const bucketColor = {
-  low: '#f4212e',
-  uncertain: '#f59e0b',
-  credible: '#1d9bf0',
-  verified: '#00ba7c',
-};
+const bucketColor = { low: CRED_RED, uncertain: CRED_AMBER, credible: BRAND_INDIGO, verified: CRED_GREEN };
+const tierColor = { hyperlocal: CYAN, local: BRAND_INDIGO, district: CRED_GREEN, regional: CRED_AMBER, wide: '#8b8d98' };
 
-const tierColor = {
-  hyperlocal: '#06b6d4',
-  local: '#1d9bf0',
-  district: '#00ba7c',
-  regional: '#f59e0b',
-  wide: '#536471',
-};
+const ChartCard = ({ icon, title, subtitle, children, height = 260 }) => (
+  <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 }, height: '100%' }}>
+    <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 0.5 }}>
+      <Box sx={{ color: 'primary.main', display: 'grid', placeItems: 'center' }}>{icon}</Box>
+      <Box>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>{title}</Typography>
+        {subtitle && <Typography variant="caption" color="text.secondary">{subtitle}</Typography>}
+      </Box>
+    </Stack>
+    <Box sx={{ width: '100%', height }}>{children}</Box>
+  </Card>
+);
 
 const InsightsPage = () => {
+  const theme = useTheme();
   const [overview, setOverview] = useState(null);
   const [credibility, setCredibility] = useState(null);
   const [propagation, setPropagation] = useState(null);
@@ -48,114 +52,86 @@ const InsightsPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const [overviewRes, credibilityRes, propagationRes, leaderboardRes] = await Promise.all([
+        const [o, c, p, l] = await Promise.all([
           getAnalyticsOverview(),
           getCredibilityDistribution(),
           getPropagationStats(),
           getLeaderboard({ limit: 10 }),
         ]);
-        setOverview(overviewRes.data);
-        setCredibility(credibilityRes.data);
-        setPropagation(propagationRes.data);
-        setLeaderboard(leaderboardRes.data.users || []);
+        setOverview(o.data);
+        setCredibility(c.data);
+        setPropagation(p.data);
+        setLeaderboard(l.data.users || []);
       } catch {
-        setError('Failed to load insights. Make sure the backend analytics API is running.');
+        setError('Could not load insights. Make sure the backend analytics API is running.');
       } finally {
         setLoading(false);
       }
     };
-
     load();
   }, []);
 
   const summaryCards = useMemo(() => {
     if (!overview) return [];
     return [
-      {
-        label: 'Accounts',
-        value: overview.total_accounts,
-        detail: `${overview.active_voters} active voters`,
-        Icon: GroupsOutlinedIcon,
-        color: '#1d9bf0',
-      },
-      {
-        label: 'Reports',
-        value: overview.total_posts,
-        detail: `${overview.located_posts} with location`,
-        Icon: AnalyticsOutlinedIcon,
-        color: '#00ba7c',
-      },
-      {
-        label: 'Votes',
-        value: overview.total_votes,
-        detail: `${overview.vote_density} per report`,
-        Icon: HowToVoteOutlinedIcon,
-        color: '#00ba7c',
-      },
-      {
-        label: 'Average Credibility',
-        value: formatPercent(overview.avg_credibility),
-        detail: `${overview.high_trust_posts} high-trust reports`,
-        Icon: SecurityOutlinedIcon,
-        color: getCredibilityColor(overview.avg_credibility),
-      },
+      { label: 'Accounts', value: overview.total_accounts, detail: `${overview.active_voters} active voters`, Icon: GroupsRoundedIcon, color: BRAND_INDIGO },
+      { label: 'Reports', value: overview.total_posts, detail: `${overview.located_posts} with location`, Icon: ArticleRoundedIcon, color: CYAN },
+      { label: 'Votes', value: overview.total_votes, detail: `${overview.vote_density} per report`, Icon: HowToVoteRoundedIcon, color: CRED_GREEN },
+      { label: 'Avg credibility', value: formatPercent(overview.avg_credibility), detail: `${overview.high_trust_posts} high-trust reports`, Icon: ShieldRoundedIcon, color: getCredibilityColor(overview.avg_credibility) },
     ];
   }, [overview]);
 
-  if (loading) return <LoadingSpinner text="Loading system insights..." />;
+  const pieData = useMemo(
+    () => (credibility?.buckets || []).map((b) => ({ name: b.label, value: b.count, percent: b.percent, color: bucketColor[b.key] || '#8b8d98' })),
+    [credibility]
+  );
+  const barData = useMemo(
+    () => (propagation?.tiers || []).map((t) => ({ name: t.label, count: t.count, percent: t.percent, color: tierColor[t.key] || '#8b8d98' })),
+    [propagation]
+  );
+  const avgCred = Math.round((overview?.avg_credibility || 0) * 100);
+
+  const tooltipStyle = {
+    backgroundColor: theme.palette.background.paper,
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 10,
+    fontSize: 12,
+    boxShadow: 'var(--shadow-lift)',
+  };
+
+  if (loading) return <LoadingSpinner text="Loading system insights…" />;
   if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
-    <Stack spacing={1.8}>
-      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
-          <Box>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-              <AnalyticsOutlinedIcon color="primary" />
-              <Typography variant="h4" sx={{ fontSize: { xs: '1.25rem', sm: '1.55rem', md: '1.75rem' } }}>
-                System Insights
-              </Typography>
-            </Stack>
-            <Typography color="text.secondary" sx={{ maxWidth: 760 }}>
-              Live operational analytics adapted from the original NCPS dashboard: credibility spread, propagation tiers, and trusted contributors.
-            </Typography>
-          </Box>
+    <Box className="rise-in">
+      <PageHeader
+        eyebrow="Analytics"
+        title="Insights"
+        subtitle="Live operational analytics from the credibility engine: how trust is distributed, how far reports propagate, and who the community relies on."
+        actions={
           <Chip
-            icon={<TrendingUpOutlinedIcon />}
             label={`${overview?.suspicious_posts || 0} low-credibility reports`}
             color="warning"
             variant="outlined"
-            sx={{ alignSelf: { xs: 'flex-start', md: 'center' }, fontWeight: 700 }}
+            sx={{ fontWeight: 600 }}
           />
-        </Stack>
-      </Card>
+        }
+      />
 
-      <Grid container spacing={2}>
+      <Grid container spacing={1.5} sx={{ mb: 2 }}>
         {summaryCards.map(({ label, value, detail, Icon, color }) => (
-          <Grid key={label} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <Card className="glass-surface" sx={{ p: 1.6, height: '100%' }}>
+          <Grid key={label} size={{ xs: 6, lg: 3 }}>
+            <Card className="glass-surface" sx={{ p: 1.85, height: '100%' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.62rem' }}>
                     {label}
                   </Typography>
-                  <Typography variant="h4" sx={{ mt: 0.5, fontWeight: 800 }}>
-                    {value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">{detail}</Typography>
+                  <Typography variant="h4" sx={{ mt: 0.4, fontWeight: 760, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>{detail}</Typography>
                 </Box>
-                <Box
-                  sx={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 2,
-                    display: 'grid',
-                    placeItems: 'center',
-                    color,
-                    bgcolor: alpha(color, 0.12),
-                  }}
-                >
-                  <Icon />
+                <Box sx={{ width: 40, height: 40, borderRadius: '11px', display: 'grid', placeItems: 'center', color, bgcolor: alpha(color, 0.13), flexShrink: 0 }}>
+                  <Icon fontSize="small" />
                 </Box>
               </Stack>
             </Card>
@@ -163,137 +139,125 @@ const InsightsPage = () => {
         ))}
       </Grid>
 
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 }, height: '100%' }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
-              <SecurityOutlinedIcon color="primary" />
-              <Typography variant="h6">Credibility Distribution</Typography>
-            </Stack>
-            <Stack spacing={2}>
-              {(credibility?.buckets || []).map((bucket) => {
-                const color = bucketColor[bucket.key] || '#94a3b8';
-                return (
-                  <Box key={bucket.key}>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.6 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{bucket.label}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {bucket.count} reports · {bucket.percent}%
-                      </Typography>
-                    </Stack>
-                    <LinearProgress
-                      variant="determinate"
-                      value={bucket.percent}
-                      sx={{
-                        height: 9,
-                        borderRadius: 99,
-                        bgcolor: alpha(color, 0.12),
-                        '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 99 },
-                      }}
-                    />
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Card>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <ChartCard icon={<ShieldRoundedIcon />} title="Overall trust" subtitle="Mean credibility across reports">
+            <ResponsiveContainer>
+              <RadialBarChart innerRadius="72%" outerRadius="100%" data={[{ value: avgCred, fill: getCredibilityColor(avgCred / 100) }]} startAngle={90} endAngle={-270}>
+                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                <RadialBar dataKey="value" cornerRadius={20} background={{ fill: alpha(theme.palette.text.primary, 0.06) }} />
+                <text x="50%" y="48%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 34, fontWeight: 700, fill: theme.palette.text.primary }}>
+                  {avgCred}%
+                </text>
+                <text x="50%" y="62%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 12, fill: theme.palette.text.secondary }}>
+                  avg credibility
+                </text>
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </ChartCard>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 }, height: '100%' }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
-              <RadarOutlinedIcon color="primary" />
-              <Typography variant="h6">Propagation Tiers</Typography>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <ChartCard icon={<ShieldRoundedIcon />} title="Credibility distribution" subtitle="Reports grouped by credibility band">
+            {pieData.length === 0 ? (
+              <Stack alignItems="center" justifyContent="center" sx={{ height: '100%' }}><Typography color="text.secondary">No data yet</Typography></Stack>
+            ) : (
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2} stroke="none">
+                    {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [`${value} reports`, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap justifyContent="center" sx={{ mt: -1 }}>
+              {pieData.map((d) => (
+                <Stack key={d.name} direction="row" spacing={0.6} alignItems="center">
+                  <Box sx={{ width: 9, height: 9, borderRadius: '3px', bgcolor: d.color }} />
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>{d.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">{d.percent}%</Typography>
+                </Stack>
+              ))}
             </Stack>
-            <Stack spacing={2}>
-              {(propagation?.tiers || []).map((tier) => {
-                const color = tierColor[tier.key] || '#94a3b8';
-                return (
-                  <Box key={tier.key}>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.6 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {tier.label} · {tier.radius_km} km
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {tier.count} reports · {tier.percent}%
-                      </Typography>
-                    </Stack>
-                    <LinearProgress
-                      variant="determinate"
-                      value={tier.percent}
-                      sx={{
-                        height: 9,
-                        borderRadius: 99,
-                        bgcolor: alpha(color, 0.12),
-                        '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 99 },
-                      }}
-                    />
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Card>
+          </ChartCard>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12 }}>
+          <ChartCard icon={<RadarRoundedIcon />} title="Propagation tiers" subtitle="How far credible reports spread" height={280}>
+            {barData.length === 0 ? (
+              <Stack alignItems="center" justifyContent="center" sx={{ height: '100%' }}><Typography color="text.secondary">No data yet</Typography></Stack>
+            ) : (
+              <ResponsiveContainer>
+                <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 24 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 12, fill: theme.palette.text.secondary }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: alpha(theme.palette.text.primary, 0.04) }} contentStyle={tooltipStyle} formatter={(value) => [`${value} reports`, 'Reports']} />
+                  <Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={26}>
+                    {barData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </ChartCard>
         </Grid>
       </Grid>
 
       <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
-          <LeaderboardOutlinedIcon color="primary" />
-          <Typography variant="h6">Trusted Contributors</Typography>
+        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 2 }}>
+          <LeaderboardRoundedIcon color="primary" />
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>Trusted contributors</Typography>
         </Stack>
-
-        <Stack spacing={1.3}>
-          {leaderboard.length === 0 ? (
-            <Typography color="text.secondary">No contributors yet.</Typography>
-          ) : leaderboard.map((user, index) => (
-            <Box
-              key={user.user_id}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '32px 1fr', sm: '40px 1fr auto' },
-                gap: 1.4,
-                alignItems: 'center',
-                p: 1.4,
-                borderRadius: 2,
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                bgcolor: (theme) => alpha(theme.palette.background.paper, 0.36),
-              }}
-            >
-              <Typography sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: 'text.secondary' }}>
-                #{index + 1}
-              </Typography>
-              <Box sx={{ minWidth: 0 }}>
-                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                  <Typography sx={{ fontWeight: 800 }} noWrap>{user.name}</Typography>
-                  <Chip label={user.badge?.label || 'Member'} size="small" color="primary" variant="outlined" sx={{ height: 22 }} />
-                </Stack>
-                <Typography variant="caption" color="text.secondary">
-                  {user.vote_count} votes · {user.post_count} reports · weight {user.weight.toFixed(3)}
+        {leaderboard.length === 0 ? (
+          <EmptyState dense icon={<GroupsRoundedIcon />} title="No contributors yet" description="Once people start voting and reporting, the most reliable contributors surface here." />
+        ) : (
+          <Stack spacing={1}>
+            {leaderboard.map((u, index) => (
+              <Box
+                key={u.user_id}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '28px 1fr', sm: '36px 1fr 140px' },
+                  gap: 1.4,
+                  alignItems: 'center',
+                  p: 1.4,
+                  borderRadius: '12px',
+                  border: `1px solid ${theme.palette.divider}`,
+                  transition: 'border-color 140ms ease',
+                  '&:hover': { borderColor: 'var(--border-strong)' },
+                }}
+              >
+                <Typography sx={{ fontFamily: 'var(--mono)', fontWeight: 700, color: index < 3 ? 'primary.main' : 'text.secondary' }}>
+                  {index + 1}
                 </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                    <Typography sx={{ fontWeight: 700 }} noWrap>{u.name}</Typography>
+                    <Chip label={u.badge?.label || 'Member'} size="small" color="primary" variant="outlined" sx={{ height: 20 }} />
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary">
+                    {u.vote_count} votes · {u.post_count} reports · weight {u.weight.toFixed(3)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.4 }}>
+                    <Typography variant="caption" color="text.secondary">Trust</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>{formatPercent(u.trust_score)}</Typography>
+                  </Stack>
+                  <LinearProgress
+                    variant="determinate"
+                    value={u.trust_score * 100}
+                    sx={{ height: 7, borderRadius: 99, bgcolor: alpha(getCredibilityColor(u.trust_score), 0.14), '& .MuiLinearProgress-bar': { bgcolor: getCredibilityColor(u.trust_score) } }}
+                  />
+                </Box>
               </Box>
-              <Box sx={{ display: { xs: 'none', sm: 'block' }, minWidth: 120 }}>
-                <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.4 }}>
-                  <Typography variant="caption" color="text.secondary">Trust</Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 800 }}>{formatPercent(user.trust_score)}</Typography>
-                </Stack>
-                <LinearProgress
-                  variant="determinate"
-                  value={user.trust_score * 100}
-                  sx={{
-                    height: 7,
-                    borderRadius: 99,
-                    bgcolor: alpha(getCredibilityColor(user.trust_score), 0.12),
-                    '& .MuiLinearProgress-bar': {
-                      borderRadius: 99,
-                      bgcolor: getCredibilityColor(user.trust_score),
-                    },
-                  }}
-                />
-              </Box>
-            </Box>
-          ))}
-        </Stack>
+            ))}
+          </Stack>
+        )}
       </Card>
-    </Stack>
+    </Box>
   );
 };
 

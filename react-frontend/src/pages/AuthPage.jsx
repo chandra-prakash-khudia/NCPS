@@ -5,12 +5,13 @@ import {
   Box,
   Button,
   Card,
-  Chip,
+  Divider,
   IconButton,
   InputAdornment,
   Stack,
   TextField,
   Typography,
+  alpha,
   useTheme,
 } from '@mui/material';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
@@ -18,11 +19,21 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
+import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
+import HowToVoteRoundedIcon from '@mui/icons-material/HowToVoteRounded';
+import NearMeRoundedIcon from '@mui/icons-material/NearMeRounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+
+const valueProps = [
+  { Icon: ShieldRoundedIcon, title: 'Credibility, not clicks', body: 'Every report carries a live trust score from weighted community votes.' },
+  { Icon: HowToVoteRoundedIcon, title: 'Your judgement counts', body: 'Reliable voters gain influence; coordinated manipulation is detected and discounted.' },
+  { Icon: NearMeRoundedIcon, title: 'Hyperlocal first', body: 'See what is happening within a kilometre, then zoom out to the world.' },
+  { Icon: InsightsRoundedIcon, title: 'Transparent by design', body: 'Open any report to see exactly how its credibility was decided.' },
+];
 
 const AuthPage = ({ mode = 'login' }) => {
   const theme = useTheme();
@@ -142,165 +153,149 @@ const AuthPage = ({ mode = 'login' }) => {
       sx={{
         minHeight: '100vh',
         display: 'grid',
-        placeItems: 'center',
-        px: 2,
-        py: 4,
+        gridTemplateColumns: { xs: '1fr', md: '1.05fr 1fr' },
         bgcolor: 'background.default',
       }}
     >
-      <Card
-        className="glass-surface"
+      {/* Brand / value panel */}
+      <Box
         sx={{
-          width: 'min(100%, 460px)',
-          p: { xs: 2, sm: 2.5 },
-          borderRadius: 2,
-          bgcolor: 'background.paper',
+          display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: 6,
+          position: 'relative',
+          overflow: 'hidden',
+          color: '#fff',
+          backgroundImage: `linear-gradient(155deg, ${theme.palette.primary.dark}, ${alpha(theme.palette.primary.main, 0.92)} 55%, ${theme.palette.primary.light})`,
         }}
       >
-        <Stack spacing={2.5}>
-          <Stack spacing={1} alignItems="flex-start">
-            <Chip
-              icon={<SecurityOutlinedIcon />}
-              label="NCPS secure workspace"
-              color="primary"
-              variant="outlined"
-              sx={{ fontWeight: 700 }}
-            />
-            <Typography variant="h4" sx={{ fontSize: { xs: '1.65rem', sm: '2rem' } }}>
-              {isRegister ? 'Create your account' : 'Sign in to NCPS'}
-            </Typography>
-            <Typography color="text.secondary">
-              {isRegister
-                ? 'Your votes, reports, trust score, and activity are kept under your own account.'
-                : 'Use your account to report local news and cast weighted credibility votes.'}
-            </Typography>
+        <Box sx={{ position: 'absolute', inset: 0, opacity: 0.18, backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ position: 'relative' }}>
+          <Box sx={{ width: 42, height: 42, borderRadius: '12px', display: 'grid', placeItems: 'center', bgcolor: 'rgba(255,255,255,0.16)', backdropFilter: 'blur(4px)' }}>
+            <ShieldRoundedIcon />
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 800, letterSpacing: '-0.02em', fontSize: '1.2rem' }}>NCPS</Typography>
+            <Typography variant="caption" sx={{ opacity: 0.85 }}>Network Credibility & Propagation System</Typography>
+          </Box>
+        </Stack>
+
+        <Box sx={{ position: 'relative', my: 4 }}>
+          <Typography variant="h3" sx={{ fontWeight: 760, mb: 1.5, fontSize: '2.1rem', lineHeight: 1.15 }}>
+            Know what to believe, and who to trust.
+          </Typography>
+          <Typography sx={{ opacity: 0.9, maxWidth: 420, mb: 4 }}>
+            A trust-aware feed for local news — resistant to bots, spoofing, and coordinated manipulation.
+          </Typography>
+          <Stack spacing={2.5} sx={{ maxWidth: 440 }}>
+            {valueProps.map(({ Icon, title, body }) => (
+              <Stack key={title} direction="row" spacing={1.75} alignItems="flex-start">
+                <Box sx={{ width: 38, height: 38, borderRadius: '10px', display: 'grid', placeItems: 'center', bgcolor: 'rgba(255,255,255,0.14)', flexShrink: 0 }}>
+                  <Icon fontSize="small" />
+                </Box>
+                <Box>
+                  <Typography sx={{ fontWeight: 700 }}>{title}</Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.85 }}>{body}</Typography>
+                </Box>
+              </Stack>
+            ))}
           </Stack>
+        </Box>
 
-          <Stack direction="row" spacing={1}>
-            <Button
-              component={RouterLink}
-              to="/login"
-              fullWidth
-              variant={!isRegister ? 'contained' : 'outlined'}
-              startIcon={<LoginOutlinedIcon />}
-            >
-              Login
-            </Button>
-            <Button
-              component={RouterLink}
-              to="/register"
-              fullWidth
-              variant={isRegister ? 'contained' : 'outlined'}
-              startIcon={<PersonAddAltOutlinedIcon />}
-            >
-              Register
-            </Button>
-          </Stack>
+        <Typography variant="caption" sx={{ opacity: 0.7, position: 'relative' }}>
+          14 trust signals · graph-based propagation · spatial verification
+        </Typography>
+      </Box>
 
-          {error && <Alert severity="error">{error}</Alert>}
-
-          {googleClientId && (
-            <Stack spacing={1}>
-              <Box ref={googleButtonRef} sx={{ minHeight: 44, display: 'grid', placeItems: 'center' }} />
-              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                Google sign-in links to the same NCPS trust profile.
+      {/* Form panel */}
+      <Box sx={{ display: 'grid', placeItems: 'center', px: { xs: 2.5, sm: 5 }, py: 5 }}>
+        <Card className="glass-surface" sx={{ width: 'min(100%, 420px)', p: { xs: 2.5, sm: 3.5 } }}>
+          <Stack spacing={2.5}>
+            <Box>
+              <Typography variant="h4" sx={{ fontSize: { xs: '1.6rem', sm: '1.8rem' }, mb: 0.75 }}>
+                {isRegister ? 'Create your account' : 'Welcome back'}
               </Typography>
-            </Stack>
-          )}
+              <Typography color="text.secondary" variant="body2">
+                {isRegister
+                  ? 'Start reporting and voting on local credibility in minutes.'
+                  : 'Sign in to your NCPS trust profile to continue.'}
+              </Typography>
+            </Box>
 
-          <Box component="form" onSubmit={handleSubmit}>
-            <Stack spacing={2}>
-              {isRegister && (
+            {error && <Alert severity="error">{error}</Alert>}
+
+            {googleClientId && (
+              <Stack spacing={1.5}>
+                <Box ref={googleButtonRef} sx={{ minHeight: 44, display: 'grid', placeItems: 'center' }} />
+                <Divider sx={{ '&::before, &::after': { borderColor: 'divider' } }}>
+                  <Typography variant="caption" color="text.secondary">or with email</Typography>
+                </Divider>
+              </Stack>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit}>
+              <Stack spacing={2}>
+                {isRegister && (
+                  <TextField
+                    label="Full name"
+                    value={form.name}
+                    onChange={updateField('name')}
+                    autoComplete="name"
+                    fullWidth
+                    InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutlineOutlinedIcon fontSize="small" /></InputAdornment> }}
+                  />
+                )}
                 <TextField
-                  label="Full name"
-                  value={form.name}
-                  onChange={updateField('name')}
-                  autoComplete="name"
+                  label="Email"
+                  type="email"
+                  value={form.email}
+                  onChange={updateField('email')}
+                  autoComplete="email"
+                  fullWidth
+                  InputProps={{ startAdornment: <InputAdornment position="start"><EmailOutlinedIcon fontSize="small" /></InputAdornment> }}
+                />
+                <TextField
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={updateField('password')}
+                  autoComplete={isRegister ? 'new-password' : 'current-password'}
                   fullWidth
                   InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonOutlineOutlinedIcon fontSize="small" />
+                    startAdornment: <InputAdornment position="start"><LockOutlinedIcon fontSize="small" /></InputAdornment>,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton edge="end" onClick={() => setShowPassword((c) => !c)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                          {showPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+                        </IconButton>
                       </InputAdornment>
                     ),
                   }}
+                  helperText={isRegister ? 'At least 8 characters · stored as a salted PBKDF2 hash' : ' '}
                 />
-              )}
-
-              <TextField
-                label="Email"
-                type="email"
-                value={form.email}
-                onChange={updateField('email')}
-                autoComplete="email"
-                fullWidth
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <EmailOutlinedIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <TextField
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={updateField('password')}
-                autoComplete={isRegister ? 'new-password' : 'current-password'}
-                fullWidth
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockOutlinedIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        edge="end"
-                        onClick={() => setShowPassword((current) => !current)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              {isRegister && (
-                <Typography variant="caption" color="text.secondary">
-                  Passwords are stored as salted PBKDF2 hashes on the API server.
-                </Typography>
-              )}
-
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={loading}
-                startIcon={isRegister ? <PersonAddAltOutlinedIcon /> : <LoginOutlinedIcon />}
-                sx={{ py: 1.35 }}
-              >
-                {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
-              </Button>
-            </Stack>
-          </Box>
-
-          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-            {isRegister ? 'Already registered?' : 'New to NCPS?'}{' '}
-            <Box
-              component={RouterLink}
-              to={isRegister ? '/login' : '/register'}
-              sx={{ color: theme.palette.primary.main, fontWeight: 800 }}
-            >
-              {isRegister ? 'Sign in' : 'Create an account'}
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  disabled={loading}
+                  startIcon={isRegister ? <PersonAddAltOutlinedIcon /> : <LoginOutlinedIcon />}
+                  sx={{ py: 1.25 }}
+                >
+                  {loading ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in'}
+                </Button>
+              </Stack>
             </Box>
-          </Typography>
-        </Stack>
-      </Card>
+
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+              {isRegister ? 'Already have an account?' : 'New to NCPS?'}{' '}
+              <Box component={RouterLink} to={isRegister ? '/login' : '/register'} sx={{ color: 'primary.main', fontWeight: 700 }}>
+                {isRegister ? 'Sign in' : 'Create one'}
+              </Box>
+            </Typography>
+          </Stack>
+        </Card>
+      </Box>
     </Box>
   );
 };

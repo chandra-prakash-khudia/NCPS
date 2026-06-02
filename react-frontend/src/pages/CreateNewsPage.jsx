@@ -2,23 +2,22 @@ import React, { useMemo, useState } from 'react';
 import {
   Box, Button, Card, Chip, MenuItem, Select, Stack, TextField, Typography, alpha,
 } from '@mui/material';
-import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
-import NearMeOutlinedIcon from '@mui/icons-material/NearMeOutlined';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import NearMeRoundedIcon from '@mui/icons-material/NearMeRounded';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PageHeader from '../components/PageHeader';
 import { createPost, uploadPostImage } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { categoryOptions, detectUrgency, getUrgencyInfo } from '../utils/helpers';
+import { categoryOptions, detectUrgency, getUrgencyInfo, CRED_RED } from '../utils/helpers';
 import { buildArticleContent } from '../utils/articleFormat';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const CreateNewsPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [headline, setHeadline] = useState('');
   const [summary, setSummary] = useState('');
   const [body, setBody] = useState('');
@@ -151,42 +150,28 @@ const CreateNewsPage = () => {
         className="glass-surface"
         sx={{ p: { xs: 4, md: 6 }, textAlign: 'center', maxWidth: 560, mx: 'auto' }}
       >
-        <CheckCircleOutlineIcon sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
+        <CheckCircleRoundedIcon sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-          Report Submitted!
+          Report submitted
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Your report has been created. Its credibility will be determined by community verification.
+          Your report is live. Its credibility will be determined by community verification.
         </Typography>
         <Stack direction="row" spacing={1.5} justifyContent="center">
-          <Button variant="contained" onClick={() => navigate('/')}>
-            View Feed
-          </Button>
-          <Button variant="outlined" onClick={resetForm}>
-            New Report
-          </Button>
+          <Button variant="contained" onClick={() => navigate('/')}>View feed</Button>
+          <Button variant="outlined" onClick={resetForm}>New report</Button>
         </Stack>
       </Card>
     );
   }
 
   return (
-    <Stack spacing={1.8} sx={{ maxWidth: 680, mx: 'auto' }}>
-      <Box>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-          <PostAddOutlinedIcon color="primary" />
-          <Typography variant="h4">Create Report</Typography>
-        </Stack>
-        <Typography variant="body2" color="text.secondary">
-          Write a headline and story. Photo and source link are optional.
-        </Typography>
-        <Chip
-          label={`Reporting as ${user?.name || 'NCPS user'}`}
-          size="small"
-          variant="outlined"
-          sx={{ mt: 1, fontWeight: 700 }}
-        />
-      </Box>
+    <Box className="rise-in" sx={{ maxWidth: 700, mx: 'auto' }}>
+      <PageHeader
+        eyebrow="Contribute"
+        title="Report news"
+        subtitle="Write a clear headline and story. A photo and source link are optional but build trust."
+      />
 
       <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
         <Stack spacing={1.8}>
@@ -272,8 +257,8 @@ const CreateNewsPage = () => {
                   sx={{
                     fontWeight: 700,
                     fontSize: '0.65rem',
-                    bgcolor: alpha('#f4212e', 0.12),
-                    color: '#f4212e',
+                    bgcolor: alpha(CRED_RED, 0.12),
+                    color: CRED_RED,
                     height: 20,
                   }}
                 />
@@ -291,9 +276,9 @@ const CreateNewsPage = () => {
               }}
             >
               <Stack direction="row" spacing={1} alignItems="center">
-                <Typography>{urgInfo.emoji}</Typography>
+                <WarningAmberRoundedIcon fontSize="small" sx={{ color: urgInfo.color }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: urgInfo.color }}>
-                  Detected: {urgInfo.label}
+                  Detected urgency: {urgInfo.label}
                 </Typography>
               </Stack>
             </Card>
@@ -323,16 +308,16 @@ const CreateNewsPage = () => {
               }}
             >
               <Stack direction="row" spacing={1} alignItems="center">
-                <NearMeOutlinedIcon
+                <NearMeRoundedIcon
                   fontSize="small"
                   color={locationStatus === 'detected' ? 'success' : 'action'}
                 />
                 <Typography variant="body2" color={locationStatus === 'detected' ? 'success.main' : 'text.secondary'}>
                   {locationStatus === 'detected'
-                    ? `📍 ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}`
+                    ? `${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}`
                     : locationStatus === 'detecting'
-                      ? 'Detecting location...'
-                      : '📍 Location unavailable — post will have no location'}
+                      ? 'Detecting location…'
+                      : 'Location unavailable — report will have no location'}
                 </Typography>
               </Stack>
             </Card>
@@ -346,11 +331,11 @@ const CreateNewsPage = () => {
             onClick={handleSubmit}
             sx={{ py: 1.5, fontSize: '1rem' }}
           >
-            {loading ? 'Submitting...' : 'Submit Report'}
+            {loading ? 'Submitting…' : 'Submit report'}
           </Button>
         </Stack>
       </Card>
-    </Stack>
+    </Box>
   );
 };
 

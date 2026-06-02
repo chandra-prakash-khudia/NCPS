@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert, Card, Chip, Grid, Stack, Typography,
+  Alert, Box, Card, Chip, Grid, Stack, Typography,
 } from '@mui/material';
-import MonitorHeartOutlinedIcon from '@mui/icons-material/MonitorHeartOutlined';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
 import { getObservabilityMetrics } from '../services/api';
 import { formatRelativeTime } from '../utils/helpers';
 
@@ -41,28 +41,25 @@ const ObservabilityPage = () => {
   ];
 
   return (
-    <Stack spacing={2}>
-      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <MonitorHeartOutlinedIcon color="primary" />
-          <Typography variant="h4">Observability</Typography>
-          <Chip size="small" label={metrics.status} color="success" />
-        </Stack>
-        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Lightweight API health, latency, and product-event counters for deployment checks.
-        </Typography>
-      </Card>
+    <Box className="rise-in">
+      <PageHeader
+        eyebrow="System"
+        title="Observability"
+        subtitle="Lightweight API health, latency, and product-event counters for deployment checks."
+        actions={<Chip size="small" label={metrics.status} color={metrics.status === 'ok' || metrics.status === 'healthy' ? 'success' : 'warning'} sx={{ fontWeight: 600, textTransform: 'capitalize' }} />}
+      />
 
-      <Grid container spacing={1.5}>
+      <Grid container spacing={1.5} sx={{ mb: 2 }}>
         {cards.map(([label, value]) => (
           <Grid key={label} size={{ xs: 6, md: 2.4 }}>
-            <Card className="glass-surface" sx={{ p: 1.6 }}>
-              <Typography variant="caption" color="text.secondary">{label}</Typography>
-              <Typography variant="h5" sx={{ fontWeight: 800 }}>{value}</Typography>
+            <Card className="glass-surface" sx={{ p: 1.85 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.62rem' }}>{label}</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 760, fontFamily: 'var(--mono)', fontVariantNumeric: 'tabular-nums', mt: 0.3 }}>{value}</Typography>
             </Card>
           </Grid>
         ))}
       </Grid>
+      <Stack spacing={2}>
 
       <Card className="glass-surface" sx={{ p: 2 }}>
         <Typography variant="h6" sx={{ mb: 1.5 }}>Product Events</Typography>
@@ -88,7 +85,8 @@ const ObservabilityPage = () => {
           ))}
         </Stack>
       </Card>
-    </Stack>
+      </Stack>
+    </Box>
   );
 };
 

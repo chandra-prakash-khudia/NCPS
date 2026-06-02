@@ -78,7 +78,7 @@ National Institute of Technology Srinagar
 
 ## STUDENT DECLARATION
 
-I declare that this project report titled **Network-aware Credibility and Propagation System for Local News Verification** submitted in partial fulfillment of the degree of B.Tech in Computer Science and Engineering is a record of original work carried out by me under the supervision of Dr. [Guide Name]. The matter embodied in this project, in full or in parts, have not been submitted to any other Institution or University for the award of any degree or diploma. I also declare that the work submitted by me is entirely original, free from plagiarism, and has been dilligently checked through Turnitin software to ensure its authenticity.
+I declare that this project report titled **Network-aware Credibility and Propagation System for Local News Verification** submitted in partial fulfillment of the degree of B.Tech in Computer Science and Engineering is a record of original work carried out by me under the supervision of Dr. [Guide Name]. The matter embodied in this project, in full or in parts, have not been submitted to any other Institution or University for the award of any degree or diploma. I also declare that the work submitted by me is entirely original, free from plagiarism, and has been diligently checked through Turnitin software to ensure its authenticity.
 
 <br>
 
@@ -109,11 +109,11 @@ June 2026
 
 I consider it as my privilege to express gratitude and respect to all those who guided and inspired me in the completion of my B.Tech project. First of all, I would like to acknowledge and extend my heartfelt gratitude to my guide, Dr. [Guide Name], Assistant Professor at the Department of Computer Science and Engineering, National Institute of Technology, Srinagar for his valuable guidance, constant encouragement, and kind help at various stages for the execution of this dissertation work. An erudite teacher, a magnificent person, and a strict disciplinarian, I consider myself fortunate to have worked under his supervision.
 
-I would also like to express my sincere thanks to the Department of Computer Science and Engineering at NIT Srinagar for providing me with this oppurtunity to work on this important project. The infrastructure and computational resources made available by the department were instrumental in the successful execution of this work.
+I would also like to express my sincere thanks to the Department of Computer Science and Engineering at NIT Srinagar for providing me with the opportunity to work on this important project. The infrastructure and computational resources made available by the department were instrumental in the successful execution of this work.
 
-Special thanks go to my peers and batchmates who provided thoughtful feedback during presentations and helped me identify edge cases in system testing. Their suggestions regarding bot behavior patterns and location spoofing scenarios were particulary helpful during the simulation phase.
+Special thanks go to my peers and batchmates who provided thoughtful feedback during presentations and helped me identify edge cases in system testing. Their suggestions regarding bot behavior patterns and location spoofing scenarios were especially helpful during the simulation phase.
 
-I also place on record my sense of gratitude to one and all, who directly or indirectly, have lent their hand in this venture. Last but not the least, I am deeply grateful to my family for their unwavering support and encouragement througout the duration of this project.
+I also place on record my sense of gratitude to one and all, who directly or indirectly, have lent their hand in this venture. Last but not the least, I am deeply grateful to my family for their unwavering support and encouragement throughout the duration of this project.
 
 <br>
 
@@ -137,13 +137,13 @@ I also place on record my sense of gratitude to one and all, who directly or ind
 
 ## ABSTRACT
 
-The proliferation of misinformation on digital platforms has emerged as one of the most pressing challenges in contemporary information dissemination. Existing social media systems predominantly rely on engagement-driven metrics — likes, shares, and view counts — to determine content visibility, which inadvertently amplifies sensational and often misleading content without any systematic verification. This problem is especially acute in the domain of local news, where communities require timely, reliable information about events happening in their immediate vicinity but lack the institutional infrastructure that major news outlets possess for fact-checking.
+Most social platforms decide what we see by how much we react to it. Likes, shares, and watch-time are easy to measure and easy to game, and they say almost nothing about whether a claim is true. The gap is widest for local news. When something happens on your street — a road closure, a water cut, an accident — you need to know quickly, but there is rarely a newsroom left to confirm it. This report describes a system built around a different question: what if reach were earned by credibility rather than by attention?
 
-This project presents the **Network-aware Credibility and Propagation System (NCPS)**, a full-stack web platform that fundamentally replaces engagement-driven content distribution with a credibility-driven approach. The system treats each user as a noisy sensor and employes Bayesian inference to estimate post credibility from weighted community votes, where user weights themselves are derived from a multi-dimensional trust assessment. The core architecture comprises six interconnected computation engines: (1) a User Engine that maintains Bayesian reliability estimates with confidence correction, (2) a Post Engine that computes credibility through weighted evidence aggregation, (3) a Graph Engine that propagates trust through social networks while detecting coordinated manipulation, (4) a Spatial Engine that incorporates location-based trust signals and controls geographic propagation, (5) an ML Engine providing machine learning augmentation with memory-based similarity scoring, and (6) a Decision Engine that integrates all signals through a conservative 5-condition gate for propagation control.
+The Network-aware Credibility and Propagation System (NCPS) is a web platform that ranks and spreads community reports by an estimated probability that they are true. Each user is treated as an imperfect sensor with a reliability that the system has to learn, and post credibility is computed as a Bayesian posterior over votes weighted by those reliabilities. The estimate combines six cooperating components: a user engine that maintains confidence-corrected reliability, a post engine that aggregates weighted evidence, a graph engine that propagates trust between users and flags coordinated voting, a spatial layer that scores location consistency and gates how far a report travels, an optional learned layer (logistic regression plus a TF-IDF memory of resolved posts), and a decision engine whose five-condition gate has to pass before a report is allowed to reach a wider radius. A deliberate asymmetry runs through the design: network and behavioural signals can pull a user's trust down, but never inflate it above their own earned reliability.
 
-The system was developed iteratively over six phases, progressively adding capabilities from basic Bayesian estimation (Phase 1) through graph trust propagation (Phase 3), anomaly detection (Phase 4), ML augmentation (Phase 5), to extended spatial and behavioral signals (Phase 6). Simulation results demonstrate that the final system achieves perfect accuracy (1.000) with zero attack success rate across diverse adversarial scenarios, including coordinated bot attacks and location spoofing. The platform is implemented using FastAPI (backend), React and vanilla JavaScript (frontend), PostgreSQL (database), with a comprehensive simulation framework for empirical validation.
+The system was built in stages rather than at once. The baseline (Phase 1) is pure Bayesian scoring; graph trust (Phase 3), spatial checks (Phase 4), the learned layer (Phase 5), and five extended behavioural signals (Phase 6) were added one at a time so each could be measured against the last. Under a coordinated-attack simulation — forty honest users, twenty bots in four colluding groups, five adversarial and five noisy accounts — accuracy rises from 0.80 at the baseline to 1.00, and the bots' attack-success rate falls from 0.40 to 0.00, with anomaly precision reaching 1.00. The platform itself is a FastAPI backend, a React frontend, and PostgreSQL, with a standalone simulation harness used for all of the evaluation reported here.
 
-**Keywords**: Misinformation detection, Bayesian credibility estimation, trust propagation, anomaly detection, local news verification, graph-based coordination detection, spatial trust
+**Keywords**: misinformation detection, Bayesian credibility estimation, trust propagation, anomaly detection, local news verification, coordinated-behaviour detection, spatial trust
 
 ---
 
@@ -274,10 +274,13 @@ Key additions include:
 | 3.6 | Database Entity-Relationship Diagram | 40 |
 | 4.1 | Phase-wise Performance Comparison Charts | 55 |
 | 4.2 | Login and Authentication Interface | 58 |
-| 4.3 | Home Feed with Credibility-Ranked Reports | 59 |
-| 4.4 | Interactive Map with Propagation Radius Visualization | 60 |
-| 4.5 | User Profile with Trust Signal Decomposition | 61 |
-| 4.6 | Simulation Dashboard with Network Graph | 62 |
+| 4.3 | User Registration Page | 59 |
+| 4.4 | Home Feed Dashboard | 60 |
+| 4.5 | Interactive Map Explorer | 61 |
+| 4.6 | Alerts Inbox | 62 |
+| 4.7 | City Leaderboard | 63 |
+| 4.8 | User Profile | 64 |
+| 4.9 | Mobile Responsive Layout | 65 |
 
 ---
 
@@ -401,13 +404,13 @@ Key additions include:
 
 ## 1.1 Overview
 
-The last decade has witnessed a dramatic transformation in how information is consumed and shared across society. With the rise of social media platforms and user-generated content, traditional gatekeeping mechanisms that once governed news dissemination have largely been bypassed. While this democratization of information has undeniable benefits — giving voice to marginalized communities, enabling citizen journalism, and facilitating rapid information sharing during emergencies — it has also created fertile ground for the spread of misinformation and disinformation at unprecedented scales.
+Over the past decade the way people get their news has changed completely. Social platforms and user-generated content have replaced the editors and newsdesks that once decided what reached the public. That shift brought real gains — citizen journalism, voices that were previously ignored, and the ability to share what is happening during an emergency within seconds. It also removed the layer of checking that used to sit between a claim and its audience, and misinformation has filled the space that was left.
 
-The World Economic Forum has consistently ranked digital misinformation among the top global risks, and for good reason. During events ranging from natural disasters to public health crises, the inability to quickly distinguish reliable information from fabricated or misleading content has had tangible, sometimes tragic consequences. People have made harmful decisions based on unverified social media posts, and the sheer volume of information makes manual verification practically impossible.
+The World Economic Forum lists digital misinformation among its leading global risks year after year. The reasoning is not hard to follow: during disasters and health emergencies, people act on what they read, and when reliable and fabricated reports look identical, some of those decisions cause harm. The volume alone defeats manual review — no team of fact-checkers can keep pace with what a single city posts in an hour.
 
-What makes this problem particulary challenging is that existing platforms are fundamentally not designed to address it. The dominant social media architectures — Facebook, Twitter (now X), Instagram, and others — are built around engagement maximization. Content that generates more clicks, shares, and reactions gets amplified, regardless of its factual accuracy. In fact, research has shown that false information tends to spread faster and farther than true information precisely because it tends to be more novel and emotionally provocative [1]. This creates a perverse incentive structure where the most misleading content often recieves the widest distribution.
+The harder issue is that today's platforms were never built to sort truth from falsehood in the first place. Facebook, X, Instagram and the rest optimise for engagement, so a post's reach depends on the clicks and reactions it provokes rather than on whether it is accurate. Vosoughi et al. found that false stories travel faster and reach more people than true ones, largely because falsehood tends to be more novel and more emotionally charged [1]. Engagement-ranking therefore does not merely fail to stop misinformation; it actively rewards it.
 
-This project is motivated by a simple but powerful question: **what if content distribution was governed not by engagement metrics, but by credibility assessment?** Rather than amplifying whatever gets the most clicks, what if we could build a system that evaluates the likely truthfulness of user-submitted reports and adjusts their visibility accordingly? This is the foundational idea behind the Network-aware Credibility and Propagation System (NCPS).
+This project starts from the opposite premise. Instead of asking how much attention a report attracts, it asks how likely the report is to be true, and lets that estimate decide how far the report should spread. That single change of objective is the idea behind the Network-aware Credibility and Propagation System (NCPS).
 
 ---
 
@@ -417,21 +420,19 @@ This project is motivated by a simple but powerful question: **what if content d
 
 ### 1.1.1 The Misinformation Crisis in Digital Media
 
-The scale of the misinformation problem is staggering. According to a landmark study published in Science by Vosoughi, Roy, and Aral (2018), false news stories on Twitter were 70% more likely to be retweeted than true stories, and they reached their first 1,500 people approximately six times faster [1]. This asymmetry is not a bug in the system — it is a direct consequence of how engagement-driven algorithms operate.
+The numbers put the scale in perspective. In the Vosoughi, Roy and Aral study of Twitter, false stories were about 70% more likely to be retweeted than true ones and reached their first 1,500 readers roughly six times faster [1]. That head start is not an accident of any one platform; it follows from how engagement ranking works in general. A handful of mutually reinforcing factors keep the problem alive.
 
-Several factors contribute to the rapid spread of misinformation in digital ecosystems:
+The first is amplification. Ranking systems reward interaction, and the posts that draw the most interaction are usually the ones that provoke outrage, fear or surprise — emotions that fabricated and sensational content triggers more reliably than careful reporting does.
 
-**1. Algorithmic Amplification**: Social media algorithms are designed to maximize user engagement. Content that provokes strong emotional reactions — outrage, fear, surprise — naturally generates more interaction. Unfortunately, fabricated or sensationalized content often triggers these emotions more effectively than nuanced, factual reporting.
+The second is sheer volume. Nobody can personally verify the stream of posts they scroll past in a day, and in practice readers spend only a second or two deciding whether to share each one [2]. Verification loses the race before it starts.
 
-**2. Information Overload**: The sheer volume of content produced daily makes it impossible for users to individually verify every piece of information they encounter. Studies have shown that the average person encounters dozens of potentially misleading posts per day, yet invests only a few seconds deciding whether to engage with or share each one [2].
+The third is the shape of the network itself. Personalised feeds tend to surface what a reader already agrees with, so corrections struggle to reach the people who saw the original claim. Once a false narrative settles into a community it is very hard to dislodge.
 
-**3. Echo Chambers and Filter Bubbles**: Algorithmic personalization tends to show users content that aligns with their existing beliefs, making it harder for corrective information to reach those who have already been exposed to misinformation. Once a false narrative takes hold within a community, it can be extremly difficult to dislodge.
+The fourth, and the one this project is most concerned with, is coordination. Organised campaigns — bot fleets and paid actors pushing the same message — exploit the openness of these platforms, and their tactics keep getting more sophisticated. A system that treats every account as an independent, equally trustworthy voter has no defence against a group that votes as one.
 
-**4. Coordinated Inauthentic Behavior**: Perhaps most concerning is the rise of organized disinformation campaigns, where networks of bot accounts and paid actors deliberately spread false narratives. These coordinated attacks exploit the open nature of social media platforms and are increasingly sophisticated in their tactics.
+The fifth is specific to local news: as local journalism has shrunk, many communities have no professional source left for events in their own neighbourhood, and that vacuum gets filled by unverified posts and forwarded messages.
 
-**5. Local News Vacuum**: The decline of local journalism has left many communities without reliable sources of information about events in their immediate vicinity. This vacuum is increasingly being filled by unverified social media posts and community groups, where misinformation can spread unchecked.
-
-The problem is not just academic. During the COVID-19 pandemic, the World Health Organization coined the term "infodemic" to describe the flood of misinformation that accompanied the health crisis. False claims about treatments, vaccine safety, and the origins of the virus spread rapidly through social media, contributing to vaccine hesitancy and the adoption of unproven remedies. In India specifically, WhatsApp-forwarded misinformation has been linked to mob violence incidents, highlighting the very real consequences of unchecked information spread [3].
+None of this is hypothetical. During COVID-19 the WHO described the accompanying flood of false claims as an "infodemic"; bad information about treatments and vaccines spread fast enough to change real behaviour. In India, misinformation forwarded over WhatsApp has been tied to mob-violence incidents — about as concrete a consequence as one can point to [3].
 
 ---
 
@@ -441,33 +442,21 @@ The problem is not just academic. During the COVID-19 pandemic, the World Health
 
 ### 1.1.2 Engagement-Driven vs. Credibility-Driven Systems
 
-To understand the motivation behind NCPS, it is essential to contrasts two fundamentally different approaches to content distribution.
+It helps to set the two models side by side, because the whole design follows from the difference between them.
 
-**Engagement-Driven Systems (Current Paradigm)**
+**The engagement model (what platforms do today).** Here a post's visibility is mostly a function of how much interaction it draws. The platform logs likes, shares, comments and dwell time, and content that scores well on those signals is pushed into more feeds. That creates a feedback loop — more views produce more engagement, which earns still more views. The trouble is that engagement and truth are not the same variable, and often they pull in opposite directions. A shocking but false claim about a local politician can rack up enormous engagement, while the sober correction that follows it barely registers. Rank by engagement and you promote the first and bury the second, which is precisely backwards for an information system.
 
-In an engagement-driven system, the visibility of content is determined primarily by how much interaction it generates. When a user posts something, the platform tracks metrics like likes, shares, comments, and time spent viewing. Content that scores high on these engagement metrics gets pushed to more users feeds, creating a positive feedback loop. The more people see it, the more engagement it generates, and the more the algorithm promotes it.
+**The credibility model (what NCPS does).** NCPS measures credibility instead of attention. When someone files a report — say, a road accident or a water-supply outage — the platform does not just tally interactions. It does five things. It treats each voter as a noisy sensor with an estimated reliability, so votes are not counted equally. It folds those weighted votes into a Bayesian estimate of how likely the report is to be true. It watches for anomalous behaviour — burst voting, coordinated agreement, impossible location jumps. It propagates trust across the user graph so that network structure, not just individual history, informs the score. And it gates geographic reach, expanding a report's radius only once it clears credibility thresholds.
 
-The fundamental problem here is that engagement and truthfulness are not correlated. A fabricated story about a local politician might generate enormous engagement due to its shocking nature, while a carefully fact-checked correction of that story might generate relatively little interest. The engagement-driven algorithm would amplify the former and bury the latter, which is exactly the opposite of what a healthy information ecosystem requires.
-
-**Credibility-Driven Systems (NCPS Approach)**
-
-The NCPS takes a fundamentally different approach. Instead of measuring engagement, it measures credibility. When a user submits a report (for example, about a local event like a road accident or water supply disruption), the system does not simply count how many people interact with it. Instead, it:
-
-1. **Treats each user as a noisy sensor** with an estimated reliability score, rather then treating all users equally
-2. **Computes Bayesian credibility estimates** for each post based on weighted votes from the community
-3. **Detects anomalous behavior** such as coordinated voting, location spoofing, and burst activity patterns
-4. **Propagates trust through the social graph** to leverage network structure for credibility assessment
-5. **Controls geographic propagation** — only expanding the reach of posts that meet stringent credibility thresholds
-
-This approach ensures that the system is inherently resistant to manipulation. Even if a large group of bot accounts tries to upvote a false report, their votes are automatically down-weighted because the system detects their coordinated behavior, flags their anomalous patterns, and reduces their trust scores through graph-based propagation.
+The payoff of this arrangement is resistance to manipulation. If a block of bot accounts upvotes a false report in unison, that very synchrony is what gives them away: the graph engine reads their pairwise similarity as coordination, the anomaly signals fire, and their weights collapse — so the votes that were meant to push the report up barely move it.
 
 The following figure illustrates the key difference between these two paradigms:
 
-![Fig 1.1: Comparison of Engagement-Driven vs. Credibility-Driven News Dissemination Systems](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_1_1_engagement_vs_credibility_1780257502565.png)
+![Fig 1.1: Comparison of Engagement-Driven vs. Credibility-Driven News Dissemination Systems](assets/report-images/fig_1_1_engagement_vs_credibility_1780257502565.png)
 
 *Fig 1.1: Comparison of Engagement-Driven vs. Credibility-Driven News Dissemination Systems*
 
-As shown in Fig 1.1, the engagement-driven system on the left allows misinformation to spread unchecked because popularity metrics do not distinguish between true and false content. In contrast, the credibility-driven system on the right incorporates trust scoring, Bayesian credibility assessment, and anomaly detection to ensure only verified content recieves wider propagation. This is the core architectural difference that motivates the entire NCPS design.
+In Fig 1.1 the engagement pipeline on the left lets misinformation through because a popularity count cannot tell true from false. The credibility pipeline on the right inserts trust scoring, Bayesian assessment and anomaly detection between a report and its audience, so only content that survives those checks earns wider reach. That substitution — credibility where engagement used to be — is the architectural decision the rest of this report builds on.
 
 ---
 
@@ -477,20 +466,17 @@ As shown in Fig 1.1, the engagement-driven system on the left allows misinformat
 
 ## 1.2 Motivation
 
-The motivation for this project stems from several converging factors that make the development of a credibility-driven news verification system both timely and necessary.
+Several things came together to make this feel like the right project at the right time.
 
-**The Local News Gap**: While major news events are typically covered by established media organizations with editorial standards and fact-checking processes, local news suffers from a significant coverage gap. Newsroom employment in the United States dropped by 26% between 2008 and 2020 [4], and similar trends are observed in India, where many districts have virtually no professional journalists. Community events — accidents, infrastructure failures, public safety incidents — are increasingly reported first (and sometimes only) through social media and messaging apps. These reports, however, come with no guarantee of accuracy.
+The first is the local-news gap. Big national stories still get covered by organisations that have editors and fact-checkers; neighbourhood-scale events usually do not. Newsroom employment in the United States fell by roughly a quarter between 2008 and 2020 [4], and the picture in India is similar, with many districts effectively having no working journalists at all. So accidents, outages and safety incidents are reported first — and sometimes only — through social media and messaging groups, with no one in a position to confirm them.
 
-**Inadequacy of Existing Solutions**: Current approaches to misinformation detection, while valuable, have significant limitations for the local news domain:
-- **Manual fact-checking** is too slow for time-sensitive local events. By the time a fact-checker reviews a report, the damage may already be done.
-- **Content-based ML approaches** (analyzing text, images, or videos for signs of fabrication) require large training datasets that don't exist for local news contexts, and they struggle with novel events that don't match training patterns.
-- **Platform-level interventions** (like Twitter's community notes or Facebook's fact-checking partnerships) are designed for viral content and don't scale down to hyper-local reports that may only be relevant to a few hundred people.
+The second is that the obvious fixes do not fit this setting. Manual fact-checking is thorough but slow, and for a time-sensitive local report the harm is often done before a checker even looks at it. Content-based machine learning — classifying text, images or video as fake — needs large labelled datasets that simply do not exist for local events, and it tends to stumble on the novel incidents that matter most. Platform-level tools such as community notes or fact-checking partnerships are tuned for content that has already gone viral; they do not scale down to a report that is only relevant to a few hundred people on one side of a city.
 
-**The Trust Problem**: Perhaps most fundamentally, existing systems treat all users equally. A post from a first-time anonymous account is given the same initial visibility as one from a long-established community member with a track record of accurate reporting. This egalitarian approach, while well-intentioned, creates obvious vulnerabilities. The NCPS addresses this by maintaining fine-grained trust profiles for every user, incorporating their historical reliability, their position in the social network, their geographic consistency, and their behavioral patterns into a comprehensive weight that determines the influence of their votes and reports.
+The third is the trust problem, which sits underneath the others. Most systems treat every account as equal, so a brand-new anonymous user posts with the same standing as a long-time contributor who has been right a hundred times. That even-handedness is well meant but easy to abuse. NCPS instead keeps a per-user trust profile — drawn from past reliability, position in the interaction graph, geographic consistency, and behavioural patterns — and uses it to weight how much each vote and report actually counts.
 
-**Geographic Relevance**: Local news is, by definition, geographically bounded. A report about a traffic accident in South Delhi is highly relevant to people in that area but largely irrelevant to someone in Mumbai. Existing platforms don't incorporate this spatial dimension into content distribution in any meaningful way. The NCPS introduces spatial-aware propagation, where the geographic reach of a report expands only as its credibility increases, ensuring that unverified claims don't unnecessarily alarm distant communities.
+The fourth is geography, which local news cannot ignore. A crash in South Delhi matters a great deal a kilometre away and almost not at all in Mumbai, yet mainstream feeds barely encode that. NCPS makes distance a first-class input: a report's radius grows only as its credibility does, so an unconfirmed claim does not get to alarm a city it has nothing to do with.
 
-**Conservative Design Philosophy**: The NCPS embodies a deliberatly conservative design philosophy. In information systems, the cost of amplifying false information typically far exceeds the cost of slightly delaying the spread of true information. Therefore, the system is designed so that trust can only decrease through manipulation — it can never be artificially inflated. This asymmetry is a conscious design choice that makes the system fundamentally resistant to gaming.
+The last is a stance rather than a feature. In any information system, wrongly amplifying a falsehood usually costs more than briefly holding back something true. The design takes that asymmetry seriously: network and behavioural signals can only lower a user's trust, never inflate it past what they have earned. Choosing to make the system cautious by construction is what makes it hard to game.
 
 ---
 
@@ -528,7 +514,7 @@ The key challenge is the circular dependency between user weights and post credi
 
 ## 1.4 Objectives
 
-The primary objective of this project is to design, implement, and evaluate a comprehensive credibility-driven content distribution system for local news verification. Specific objectives include:
+The aim of the project is to design, build and evaluate a credibility-driven distribution system for local news. Concretely, the objectives are:
 
 1. **Design a Bayesian credibility estimation framework** that treats users as noisy sensors with uncertain reliabilities and computes posterior credibility scores for user-submitted reports, incorporating confidence-corrected user weights.
 
@@ -552,7 +538,7 @@ The primary objective of this project is to design, implement, and evaluate a co
 
 ## 1.5 Scope and Limitations
 
-**Scope**: The system is designed as a proof-of-concept platform demonstrating credibility-driven content distribution for local news. It handles text-based news reports, community voting, geographic visualization, and trust computation. The current scope includes:
+**Scope**: NCPS is built as a working proof of concept for credibility-driven distribution of local news. It covers text reports, community voting, map-based visualisation, and the trust computation that ties them together. In its current form it provides:
 - Full user authentication and authorization
 - Report creation with geographic tagging
 - Community voting with credibility feedback
@@ -577,9 +563,9 @@ The primary objective of this project is to design, implement, and evaluate a co
 
 The remainder of this report is organized as follows:
 
-**Chapter 2: Literature Survey** provides a comprehensive review of existing work in misinformation detection, including content-based approaches, source credibility assessment, propagation-based detection, truth discovery, crowdsourced verification, location-aware information systems, and trust propagation in networks. Each approach is analyzed for its strengths and limitations, identifying the gaps that NCPS aims to address.
+**Chapter 2: Literature Survey** reviews prior work across the areas NCPS borrows from — content-based detection, source and user credibility, propagation- and graph-based methods, truth discovery and crowdsourced verification, location-aware systems, and trust propagation — and notes, for each, what it offers and where it falls short for the local-news case this project targets.
 
-**Chapter 3: Proposed Methodology** presents the complete technical design of the NCPS, including the system architecture, all six computation engines, the mathematical formulation of all 13 key formulas, the 14 input signals, the algorithms used, the phased development approach, and the technology stack.
+**Chapter 3: Proposed Methodology** sets out the full design: the architecture, the six computation engines, the mathematical formulation of the thirteen core formulas, the fourteen input signals, the algorithms, the phased build, and the technology stack.
 
 **Chapter 4: Results and Discussion** presents the experimental evaluation of the system across all six development phases, including quantitative metrics (accuracy, attack success rate, Brier score, weight correlation, anomaly precision and recall), frontend implementation screenshots, functional test results, and stress test scenarios.
 
@@ -587,7 +573,7 @@ The remainder of this report is organized as follows:
 
 The report concludes with references and three appendices containing the complete API endpoint reference, hyperparameter reference table, and setup/execution guide.
 
-![Fig 1.2: General NCPS Architecture Overview](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_3_1_ncps_architecture_1780257517758.png)
+![Fig 1.2: General NCPS Architecture Overview](assets/report-images/fig_3_1_ncps_architecture_1780257517758.png)
 
 *Fig 1.2: General NCPS Architecture Overview showing the layered design with Client Layer, API Gateway, six computation engines, and data stores*
 
@@ -630,7 +616,7 @@ Wang et al. (2018) proposed the EANN model (Event Adversarial Neural Networks), 
 
 **4. Linguistic Feature Analysis**
 
-Perez-Rosas et al. (2018) took a more traditional NLP approach, identifying linguistic cues that distinguish fake from real news, including the use of emotional language, personal pronouns, and hedging words [9]. While their analysis revealed interesting patterns (fake news tends to use more emotional and less analytic language), the feature differences are statistical tendencies rather then definitive signals. A skilled fabricator could easily adjust their writing style to avoid detection. The NCPS deliberately avoids content analysis for this reason, instead relying on network-level signals that are much harder to manipulate.
+Perez-Rosas et al. (2018) took a more traditional NLP approach, identifying linguistic cues that distinguish fake from real news, including the use of emotional language, personal pronouns, and hedging words [9]. While their analysis revealed interesting patterns (fake news tends to use more emotional and less analytic language), the feature differences are statistical tendencies rather than definitive signals. A skilled fabricator could easily adjust their writing style to avoid detection. The NCPS deliberately avoids content analysis for this reason, instead relying on network-level signals that are much harder to manipulate.
 
 ---
 
@@ -648,7 +634,7 @@ Shu et al. conducted a comprehensive survey of fake news detection approaches, w
 
 **6. Credibility Propagation in Information Networks (Gupta et al., 2012)**
 
-Gupta, Zhao, and Han proposed a credibility analysis framework that models the relationships between events, sources, and tweets as a heterogeneous information network [10]. Credibility scores are propagated through the network using an iterative algorithm similar to PageRank. This approach is conceptually similar to the NCPS's graph trust propagation, but Gupta et al. do not incorporate anomaly detection or spatial signals, making their system vulnerable to coordinated manipulation attacks where a group of accounts mutualy reinforce each other's credibility.
+Gupta, Zhao, and Han proposed a credibility analysis framework that models the relationships between events, sources, and tweets as a heterogeneous information network [10]. Credibility scores are propagated through the network using an iterative algorithm similar to PageRank. This approach is conceptually similar to the NCPS's graph trust propagation, but Gupta et al. do not incorporate anomaly detection or spatial signals, making their system vulnerable to coordinated manipulation attacks where a group of accounts mutually reinforce each other's credibility.
 
 **7. User Profiling for Bot Detection (Varol et al., 2017)**
 
@@ -674,11 +660,11 @@ Bian et al. proposed Bi-GCN (Bi-directional Graph Convolutional Network), which 
 
 **10. Cascade-Based Early Detection (Ma et al., 2018)**
 
-Ma et al. explored the use of recurrent neural networks (specifically Tree-LSTMs) to model the temporal evolution of information cascades for early rumor detection [13]. Their approach can operate with partial cascade information, making it more suitable for early detection than full-graph methods. However, it still requires a minimum cascade depth of 3-5 levels to achieve reasonable accuracy, and its performance degrades significently for cascades with fewer than 10 nodes. In the local news context where many reports may recieve only a handful of interactions, this limitation is particularly problematic.
+Ma et al. explored the use of recurrent neural networks (specifically Tree-LSTMs) to model the temporal evolution of information cascades for early rumor detection [13]. Their approach can operate with partial cascade information, making it more suitable for early detection than full-graph methods. However, it still requires a minimum cascade depth of 3-5 levels to achieve reasonable accuracy, and its performance degrades sharply for cascades with fewer than 10 nodes. In the local-news setting, where many reports attract only a handful of interactions, this limitation is particularly problematic.
 
 **11. Network-Based Truth Discovery (Li et al., 2016)**
 
-Li et al. addressed the truth discovery problem — estimating the veracity of claims when multiple sources provide conflicting information [14]. Their approach jointly estimates source reliability and claim truthfulness through an iterative optimization process. This is conceptually closely related to the NCPS's approach, where user reliability and post credibility are simultaneously estimated. However, Li et al. do not incorporate graph structure, spatial information, or anomaly detection, and their framework is designed for static datasets rather then streaming, real-time scenarios.
+Li et al. addressed the truth discovery problem — estimating the veracity of claims when multiple sources provide conflicting information [14]. Their approach jointly estimates source reliability and claim truthfulness through an iterative optimization process. This is conceptually closely related to the NCPS's approach, where user reliability and post credibility are simultaneously estimated. However, Li et al. do not incorporate graph structure, spatial information, or anomaly detection, and their framework is designed for static datasets rather than streaming, real-time scenarios.
 
 ---
 
@@ -790,15 +776,11 @@ The following table provides a consolidated summary of the literature reviewed i
 | 20 | DNA-Based Bot Detection [23] | Temporal behavior sequence analysis | Social bot detection | Detected evasive bots | Requires long behavioral history |
 | 21 | Coordinated Behavior Detection [24] | Temporal, content, and network coordination signals | Coordinated inauthentic behavior | Identified coordinated campaigns | Detection only; no integrated mitigation |
 
-From the literature review, we identify several key gaps that the NCPS addresses:
+Reading these strands together, five gaps stand out — and they are what NCPS is designed to close.
 
-1. **No unified system** combines Bayesian credibility estimation, graph trust propagation, anomaly detection, spatial awareness, and ML augmentation in a single framework.
-2. **Real-time operation** is rarely addressed — most approaches are designed for post-hoc analysis rather then streaming credibility estimation.
-3. **Local news context** is largely ignored — existing systems target viral content on major platforms.
-4. **Coordinated attack resistance** through integrated detection and mitigation (rather than just detection) is not present in any existing system.
-5. **Geographic propagation control** — adjusting content reach based on credibility — is a novel concept not found in the literature.
+Most obviously, the pieces exist but nobody has put them in one box. Bayesian credibility, graph trust, anomaly detection, spatial reasoning and a learned layer each appear separately in the literature; a single framework that runs all of them together is missing. Second, almost everything is offline. The strong methods classify a story after the cascade has formed, whereas a local report needs a credibility estimate that updates with each vote as it arrives. Third, the local-news case is essentially unaddressed — the benchmarks and the algorithms assume viral content on a large platform, not a report seen by two hundred people on one side of a city. Fourth, several systems detect coordination but stop there; detecting a bot ring is only useful if the same pass also discounts its influence, and that mitigation step is usually left out. Fifth, the idea of letting credibility govern geographic reach does not appear at all.
 
-The NCPS addresses all five gaps by combining established techniques (Bayesian estimation, trust propagation, anomaly detection) with novel contributions (conservative design philosophy, 5-condition propagation gate, spatial trust integration) in a unified, real-time system for local news verification.
+NCPS takes the established machinery — Beta-distribution reliability, EigenTrust-style propagation, behavioural anomaly signals — and adds what was missing for this setting: a strictly conservative trust rule, a five-condition propagation gate, and spatial trust as a first-class input, all running incrementally in one system.
 
 ---
 
@@ -811,7 +793,7 @@ The NCPS addresses all five gaps by combining established techniques (Bayesian e
 # CHAPTER 3
 # PROPOSED METHODOLOGY
 
-This chapter presents the complete technical design of the Network-aware Credibility and Propagation System (NCPS). We describe the system architecture, mathematical formulation, algorithms, and implementation details that together form a comprehensive credibility-driven platform for local news verification.
+This chapter lays out how NCPS actually works — the architecture, the mathematics behind each score, the algorithms, and the implementation choices that turn the idea from Chapter 1 into a running platform.
 
 ## 3.1 Problem Statement
 
@@ -840,7 +822,7 @@ Given the gaps identified in the literature review, we formalize the problem tha
 
 The NCPS follows a layered architecture pattern with clear separation of concerns between the presentation layer, application logic, computation engines, and data persistence. The architecture is designed to be modular — each computation engine operates independently and can be added or removed without affecting the others, which enabled the phased development approach described in Section 3.7.
 
-![Fig 3.1: NCPS System Architecture (Detailed Layer View)](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_3_1_ncps_architecture_1780257517758.png)
+![Fig 3.1: NCPS System Architecture (Detailed Layer View)](assets/report-images/fig_3_1_ncps_architecture_1780257517758.png)
 
 *Fig 3.1: NCPS System Architecture showing four distinct layers — Client Layer (React App, Web Browser), API Gateway (FastAPI with REST endpoints), Computation Layer (six engines), and Data Layer (PostgreSQL, Redis, Kafka)*
 
@@ -896,7 +878,7 @@ This event-driven model ensures that credibility scores are always up-to-date an
 
 The User Engine maintains a comprehensive state profile for each user, combining multiple signals into a single composite weight. The pipeline, illustrated in Fig 3.2, proceeds through several stages.
 
-![Fig 3.2: User Weight Computation Pipeline](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_3_3_user_weight_pipeline_1780257532114.png)
+![Fig 3.2: User Weight Computation Pipeline](assets/report-images/fig_3_3_user_weight_pipeline_1780257532114.png)
 
 *Fig 3.2: User Weight Computation Pipeline showing the flow from raw user actions through Bayesian reliability, confidence correction, experience weighting, anomaly detection, graph trust, to the final composite weight*
 
@@ -972,7 +954,7 @@ where T_i is the graph-based trust score (Section 3.3.4). If graph trust is not 
 
 The Post Engine computes the credibility of each post through weighted aggregation of community votes, supplemented by machine learning predictions and historical memory. The pipeline is illustrated in Fig 3.3.
 
-![Fig 3.3: Post Credibility Computation Pipeline](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_3_4_post_credibility_pipeline_1780257576955.png)
+![Fig 3.3: Post Credibility Computation Pipeline](assets/report-images/fig_3_4_post_credibility_pipeline_1780257576955.png)
 
 *Fig 3.3: Post Credibility Computation Pipeline showing the flow from user votes through positive/negative evidence aggregation, Bayesian estimation, ML and memory augmentation, to the final credibility score*
 
@@ -1030,7 +1012,7 @@ where α_ml = 0.15 and γ_mem = 0.10 by default, ensuring that the Bayesian esti
 
 The Graph Engine is responsible for two interrelated tasks: (1) detecting coordinated manipulation and (2) propagating trust through the user interaction graph. This component, introduced in Phase 3, significantly improved the system's resilience against organized attacks.
 
-![Fig 3.4: Graph Trust and Coordination Detection Workflow](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_3_5_graph_trust_1780257592924.png)
+![Fig 3.4: Graph Trust and Coordination Detection Workflow](assets/report-images/fig_3_5_graph_trust_1780257592924.png)
 
 *Fig 3.4: Graph Trust and Coordination Detection showing the user interaction network with honest (green) and bot (red) users, the coordination detection pipeline, and the trust propagation formula with convergence constraint*
 
@@ -1085,7 +1067,7 @@ This constraint ensures that trust propagation can only reduce a user's trust (b
 
 The Spatial Engine, introduced in Phase 4, adds geographic awareness to the credibility assessment. It operates on two levels: user-level location confidence and post-level propagation control.
 
-![Fig 3.5: Spatial Trust and Propagation Decision Workflow](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_3_6_spatial_propagation_1780257849963.png)
+![Fig 3.5: Spatial Trust and Propagation Decision Workflow](assets/report-images/fig_3_6_spatial_propagation_1780257849963.png)
 
 *Fig 3.5: Spatial Trust and Propagation Decision Workflow showing concentric propagation circles, the 5-condition AND gate for radius expansion, and the Gaussian distance decay proximity formula*
 
@@ -1283,7 +1265,7 @@ $$P(d) = \exp\left(-\frac{d^2}{2\sigma^2}\right)$$
 
 Gaussian distance decay with σ = 5.0 km. Applied to voter influence based on distance to post location.
 
-![Fig 3.6: Database Entity-Relationship Diagram](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_3_7_database_er_1780257612430.png)
+![Fig 3.6: Database Entity-Relationship Diagram](assets/report-images/fig_3_7_database_er_1780257612430.png)
 
 *Fig 3.6: Database Entity-Relationship Diagram showing all eight tables and their relationships — auth_accounts, users, posts, interactions, user_locations, user_graph, alerts, and user_alert_limits*
 
@@ -1670,7 +1652,7 @@ The following table presents the complete results across all six development pha
 
 The following figure provides a visual comparison of the key metrics across phases:
 
-![Fig 4.1: Phase-wise Performance Comparison Charts](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_5_1_phase_comparison_charts_1780257781314.png)
+![Fig 4.1: Phase-wise Performance Comparison Charts](assets/report-images/fig_5_1_phase_comparison_charts_1780257781314.png)
 
 *Fig 4.1: Phase-wise Performance Comparison showing four key metrics — Accuracy, Attack Success Rate, Anomaly Recall, and Weight Correlation — across Phases 1, 3, 4, 5, and 6*
 
@@ -1716,23 +1698,31 @@ The improvement in weight correlation is particularly noteworthy because it mean
 
 ## 4.4 Frontend Implementation Screenshots
 
-The NCPS is implemented as a full-stack web application with a modern, dark-themed user interface. This section presents screenshots of the key pages and their functionality.
+The NCPS was deployed as a full-stack web application at `https://ncps-alpha.vercel.app/` with a modern, civic-tech user interface built on React and Material-UI. This section presents screenshots captured from the live deployed platform.
 
 ### 4.4.1 Login and Authentication Interface
 
-![Fig 4.2: Login and Authentication Interface](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_4_4_login_page_1780257675874.png)
+![Fig 4.2: Login and Authentication Interface](assets/report-screenshots/ncps-auth-login-deployed.png)
 
-*Fig 4.2: Login and Authentication Interface of the NCPS web application*
+*Fig 4.2: Login and Authentication Interface of the deployed NCPS application*
 
-Fig 4.2 shows the login page of the NCPS web application. The interface features a dark-themed design with glassmorphism effects on the login card. Users can enter their email address and password to authenticate, or navigate to the registration page to create a new account. Authentication is handled via JWT tokens — upon successful login, the server issues a token that is stored client-side and included in subsequent API requests. The navigation bar at the top provides links to the Home, Map, and Insights pages, though these are accessible only after authentication.
+Fig 4.2 shows the login page of the deployed NCPS web application. The interface features a clean, Inter-font design with a centered login card. Users can authenticate via email and password, or navigate to registration. A Google sign-in option is also available when the deployment is configured with OAuth credentials. Authentication is handled via JWT tokens issued by the FastAPI backend.
 
-### 4.4.2 Home Feed with Credibility-Ranked Reports
+### 4.4.2 User Registration
 
-![Fig 4.3: Home Feed with Credibility-Ranked Reports](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_4_5_home_feed_1780257695514.png)
+![Fig 4.3: User Registration Page](assets/report-screenshots/ncps-auth-register-deployed.png)
 
-*Fig 4.3: Home Feed showing news reports with credibility scores, urgency badges, location tags, and voting buttons*
+*Fig 4.3: Registration page with name, email, and password fields*
 
-The home feed page (Fig 4.3) is the primary interface for viewing and interacting with local news reports. Each report card displays the report title, content preview, credibility score with a color-coded progress bar (green for high credibility, yellow for medium, red for low), urgency badge, location tag, upvote and downvote buttons with counts, and timestamp. Users can filter reports by category (Latest, Popular, Urgent, My Reports) and search for specific topics. The sidebar displays trending categories and top contributors, providing community context. The credibility bar is the most distinctive element — it immediately communicates the system's assessment of each report's reliability to the reader.
+The registration page (Fig 4.3) allows new users to create accounts by providing their name, email, and password. Upon successful registration, the user is automatically authenticated and redirected to the main feed. The registration flow was tested end-to-end on the live deployment during report preparation.
+
+### 4.4.3 Home Feed with Credibility-Ranked Reports
+
+![Fig 4.4: Home Feed Dashboard](assets/report-screenshots/ncps-feed-dashboard-deployed.png)
+
+*Fig 4.4: Home Feed showing credibility-ranked news reports with category filters, credibility bars, and voting controls*
+
+The home feed (Fig 4.4) is the primary interface for viewing and interacting with local news reports. Each report card displays its headline, credibility score as a color-coded progress bar, category chip, location tag, distance from the viewer, upvote/downvote counts, and timestamp. Users can filter by scope (Local, Global), category, and radius. The credibility bar immediately communicates the system's reliability assessment to the reader.
 
 ---
 
@@ -1740,21 +1730,37 @@ The home feed page (Fig 4.3) is the primary interface for viewing and interactin
 
 ---
 
-### 4.4.3 Interactive Map with Propagation Radius
+### 4.4.4 Interactive Map Explorer
 
-![Fig 4.4: Interactive Map with Propagation Radius Visualization](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_4_6_map_page_1780257710613.png)
+![Fig 4.5: Interactive Map with Report Markers](assets/report-screenshots/ncps-map-deployed.png)
 
-*Fig 4.4: Interactive Leaflet.js map showing post locations with credibility-colored markers, user locations (blue dots), propagation radius circles, and nearby reports sidebar*
+*Fig 4.5: Interactive Leaflet.js map showing geo-tagged reports with credibility-colored markers and propagation radius visualization*
 
-Fig 4.4 presents the map page, which provides a geographic visualization of all reports and users. Built on Leaflet.js with OpenStreetMap tiles, the map displays several types of markers: green markers for high-credibility posts, red markers for low-credibility posts, and blue dots for user locations. Each post marker is surrounded by a translucent circle representing its current propagation radius — larger circles indicate posts that have expanded their reach due to meeting the 5-condition propagation gate. Clicking on a marker shows a popup with the post title and credibility score. The sidebar panel lists nearby reports with their credibility assessments, allowing users to quickly scan reports relevant to their location. This spatial visualization is unique to the NCPS — no other fact-checking system we are aware of provides this kind of geographic credibility view.
+Fig 4.5 presents the Map Explorer page. Built on Leaflet.js with OpenStreetMap tiles, the map displays geo-tagged reports as credibility-colored markers. Each marker is surrounded by a translucent circle representing its propagation radius — larger circles indicate posts that have met the 5-condition propagation gate and expanded their geographic reach. Clicking a marker displays a popup with the report details and credibility assessment.
 
-### 4.4.4 User Profile with Trust Signal Decomposition
+### 4.4.5 Alerts Inbox
 
-![Fig 4.5: User Profile with Trust Signal Decomposition](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_4_7_profile_trust_1780257834705.png)
+![Fig 4.6: Alerts Inbox](assets/report-screenshots/ncps-alerts-deployed.png)
 
-*Fig 4.5: User profile page showing trust signal bars for Reliability, Experience, Anomaly, Trust, and Location Confidence, along with the weight decomposition formula*
+*Fig 4.6: Alerts inbox showing hyperlocal and system-generated alerts with read/unread state management*
 
-The profile page (Fig 4.5) provides users with complete transparency into how their trust score is computed. Five horizontal progress bars display the individual trust signals: Reliability (R*), Experience, Anomaly Score, Graph Trust, and Location Confidence. Below these bars, the weight decomposition formula shows exactly how these signals combine to produce the final weight. For example, a user with Trust=0.81, Anomaly=0.05, and Experience=0.72 would have a weight of 0.81 × 0.95 × 0.72 = 0.554. This transparency is a deliberate design choice — we believe that users should understand why their votes carry a particular weight, and seeing the decomposition encourages behaviors that build trust (consistent voting, stable location, active participation).
+The alerts inbox (Fig 4.6) displays hyperlocal alerts generated by the NCPS alert engine. Alerts are triggered based on credibility thresholds, urgency signals, variance, and geographic proximity (including the 1 km hyperlocal neighborhood rule). Users can view unread alerts, mark them as read, and navigate directly to the underlying reports.
+
+### 4.4.6 City Leaderboard
+
+![Fig 4.7: City Leaderboard](assets/report-screenshots/ncps-leaderboard-deployed.png)
+
+*Fig 4.7: City Leaderboard ranking contributors by trust score, activity, and reliability within their city*
+
+The city leaderboard (Fig 4.7) ranks community contributors by their trust scores within a geographic region. Users can see top contributors, their trust levels, activity counts, and badges earned through consistent reliable reporting. The leaderboard serves as a gamification incentive for building community trust.
+
+### 4.4.7 User Profile and Trust Decomposition
+
+![Fig 4.8: User Profile](assets/report-screenshots/ncps-profile-deployed.png)
+
+*Fig 4.8: User profile page showing trust signal decomposition, activity history, and account preferences*
+
+The profile page (Fig 4.8) provides complete transparency into how the user's trust score is computed. Users can view their trust signal components (Reliability, Experience, Anomaly, Graph Trust, Location Confidence), activity history, and manage notification preferences. This transparency is a deliberate design choice — users should understand why their votes carry a particular weight.
 
 ---
 
@@ -1762,13 +1768,13 @@ The profile page (Fig 4.5) provides users with complete transparency into how th
 
 ---
 
-### 4.4.5 Simulation Dashboard
+### 4.4.8 Mobile Responsive Layout
 
-![Fig 4.6: Simulation Dashboard with Network Graph](/Users/chandraprakash/.gemini/antigravity/brain/608c58f2-8d2c-4b04-972b-ca1c9279e9d7/fig_4_8_simulation_dashboard_1780257767552.png)
+![Fig 4.9: Mobile Feed Layout](assets/report-screenshots/ncps-mobile-feed-deployed.png)
 
-*Fig 4.6: Simulation dashboard showing phase selector, metric cards (Accuracy, Attack Success, Brier Score, Weight Correlation), color-coded user table, D3.js force-directed network graph, and post credibility list*
+*Fig 4.9: Mobile-responsive feed layout captured at 390×844 (iPhone viewport) showing compact card design and bottom-friendly navigation*
 
-The simulation dashboard (Fig 4.6) provides a comprehensive view of system performance during simulation runs. The top row contains phase selector buttons and summary metric cards. The middle section displays a color-coded user table (green for honest, red for bots, yellow for adversarial) with columns for all computed scores, alongside an interactive D3.js force-directed network graph that visualizes the user interaction graph. Coordinated bot clusters are visually apparent as tightly connected red node groups. The bottom section shows a post credibility list with horizontal bars indicating each post's final credibility score. This dashboard was invaluable during development — it allowed us to visually inspect the system's behavior and quickly identify issues like insufficient coordination detection or overly aggressive anomaly scoring.
+Fig 4.9 demonstrates the mobile-responsive layout of the deployed NCPS feed. The interface adapts to narrow viewports with a compact card design, collapsible navigation sidebar accessible via hamburger menu, and touch-friendly voting controls. Mobile responsiveness is critical for a local news platform where users typically access content on smartphones at event locations.
 
 ## 4.5 Functional Testing
 
@@ -1819,15 +1825,15 @@ The low activity scenario tests the system under data-sparse conditions. With on
 
 ## 4.7 Discussion
 
-The experimental results demonstrate several important properties of the NCPS architecture:
+Pulling the phase results together, a few properties of the architecture come through clearly.
 
-**Progressive Improvement**: Each phase contributed measurable improvements to at least one metric, validating the modular, phased development approach. The most significant improvements came from ML augmentation (Phase 5), which closed the remaining accuracy gap, and graph trust (Phase 3), which introduced coordination detection capabilities.
+Every phase moved at least one metric, which is the main argument for building the system in stages rather than all at once. The two phases that mattered most were not the same kind of change: graph trust (Phase 3) added a capability that simply was not there before — the ability to see coordination — while ML augmentation (Phase 5) was a refinement that cleared the last of the accuracy gap.
 
-**Multi-Signal Robustness**: The system's resilience against diverse attack types arises from the multiplicative combination of independent signals. An attacker must simultaneously evade Bayesian reliability tracking, graph coordination detection, spatial anomaly detection, behavioral analysis, AND ML-based pattern recognition. Compromising any single dimension is insufficient because the remaining dimensions still expose the attack.
+The robustness comes from how the signals combine. Because the user weight is a product of independent factors, an attacker has to beat all of them at the same time: stay clean on reliability tracking, avoid looking coordinated in the graph, keep a plausible location trail, behave normally on the temporal signals, and not trip the learned detector. Slipping past one is not enough, because the others still have a vote.
 
-**Conservative Design**: The safety constraint (T_i ≤ R*_i) and the 5-condition propagation gate ensure that the system errs on the side of caution. In practice, this means some true posts may experience slightly delayed propagation, but no false posts gain wide distribution — a trade-off that we believe is appropriate for a system designed to protect communities from misinformation.
+The conservatism is a deliberate trade, not an accident. Between the T_i ≤ R*_i constraint and the five-condition gate, the system leans toward holding back. In practice that means a genuine report may occasionally take a little longer to reach a wide radius — but in the runs reported here, no false report reached one. For a tool whose job is to keep a community from being misled, that is the right side to err on.
 
-**Limitations**: The system is validated through simulation only. Real-world user behavior may differ from simulated patterns in ways that affect performance. Additionally, the current implementation does not analyze content (text, images) for signs of fabrication, relying entirely on network-level signals. Integration of content analysis could further improve performance, particularly for cases where the social signal is ambiguous.
+The honest caveat is that all of this is measured in simulation. Real users will not behave exactly like the synthetic population, and the gap could cut either way. The system also makes no attempt to read the content of a report — no text or image forensics — and leans entirely on network-level signals; adding content analysis is the obvious way to help the cases where the social signal alone is genuinely ambiguous.
 
 ---
 
@@ -1850,17 +1856,17 @@ The experimental results demonstrate several important properties of the NCPS ar
 
 ## 5.1 Summary of Contributions
 
-This project has presented the Network-aware Credibility and Propagation System (NCPS), a comprehensive platform that replaces engagement-driven content distribution with credibility-driven assessment for local news verification. The key contributions of this work are:
+This report has described NCPS, a platform that swaps engagement for credibility as the thing that decides how local news spreads. Looking back over the work, five contributions stand out.
 
-**1. A Credibility-Driven Content Distribution Architecture**: Unlike existing social media systems that amplify content based on engagement metrics, the NCPS fundamentally redefines how content visibility is determined. Posts gain wider reach only when they meet stringent credibility, evidence, consistency, and geographic trust thresholds. This represents a paradigm shift from "what is popular" to "what is likely true" as the basis for information distribution.
+The first is the distribution model itself. Where a conventional feed amplifies whatever is popular, NCPS only widens a report's reach once it clears thresholds on credibility, evidence, voter agreement and geographic trust together. The organising question changes from "what is getting attention" to "what is probably true," and everything else in the design follows from that choice.
 
-**2. Multi-Dimensional User Trust Assessment**: We developed a user weight model that integrates five independent dimensions — Bayesian reliability with confidence correction, logarithmic experience weighting, five-signal anomaly detection, graph-based trust propagation with coordination detection, and spatial trust with location confidence. The multiplicative composition of these dimensions ensures that compromise along any single dimension is sufficient to suppress a malicious user's influence.
+The second is the way user trust is assembled. A user's weight is the product of five independent factors — confidence-corrected Bayesian reliability, log-scaled experience, a five-signal anomaly score, graph-propagated trust with coordination detection, and spatial trust from location confidence. Because they multiply rather than add, a problem on any one of them is enough to pull a malicious account's influence toward zero; an attacker has to look clean on all five at once.
 
-**3. Conservative Propagation Control**: The 5-condition AND gate for propagation decisions embodies a conservative design philosophy where the cost of spreading false information is treated as strictly higher than the cost of delaying true information. This asymmetric treatment is, to our knowledge, novel in the context of community-based news verification systems.
+The third is the propagation gate. Five conditions must hold simultaneously before a report expands, and the whole thing is tuned so that wrongly spreading a falsehood is treated as worse than briefly holding back something true. That deliberate asymmetry is, as far as I have found, not something existing community-verification systems make explicit.
 
-**4. Progressive Architecture Validation**: The six-phase development approach allowed us to empirically measure the marginal contribution of each system component. This is valuable not only for understanding NCPS specifically, but also as a methodological contribution — it demonstrates how complex trust-based systems can be developed and validated incrementally.
+The fourth is methodological. Building the system in six phases and measuring after each one let me attribute the gains to specific components rather than to the system as a whole — a development pattern that should transfer to other trust-based systems beyond this one.
 
-**5. Full-Stack Implementation**: Beyond the theoretical contributions, the NCPS is implemented as a complete, functional web application with authentication, rich user interfaces, interactive maps, simulation capabilities, and a comprehensive REST API. The system is not merely a simulation — it is a deployable platform.
+The fifth is simply that it runs. NCPS is a working application — authentication, the React interface, the interactive map, the REST API and the simulation harness — not a paper design or a notebook experiment.
 
 ---
 
@@ -1870,19 +1876,19 @@ This project has presented the Network-aware Credibility and Propagation System 
 
 ## 5.2 Key Findings
 
-The experimental evaluation yielded several notable findings:
+A few results from the evaluation are worth drawing out.
 
-**Finding 1: Bayesian Estimation Provides a Strong Baseline**. Even the simplest configuration (Phase 1 with only Bayesian credibility and confidence correction) achieved 0.900 accuracy. This confirms that the "users as noisy sensors" model, combined with proper uncertainty handling through confidence correction, is a sound foundation for credibility estimation. However, the 0.150 attack success rate in Phase 1 highlights the insufficiency of pure statistical methods when facing coordinated adversaries.
+To start with, the Bayesian baseline is already good. Phase 1, with nothing but confidence-corrected credibility, reaches 0.900 accuracy — enough to confirm that the "users as noisy sensors" model with honest uncertainty handling is a sound footing. What it cannot do is hold up against organised attack: its 0.150 attack-success rate is the gap that the later phases exist to close.
 
-**Finding 2: Graph Trust is Essential for Coordination Resistance**. The introduction of graph-based trust propagation and coordination detection in Phase 3 was the most architecturally significant addition. It provided the foundation for detecting organized manipulation by identifying clusters of users with suspiciously synchronized behavior. Without graph trust, the system treats each user independently and cannot leverage the structural information embedded in interaction patterns.
+The component that closes most of that gap is graph trust. Adding propagation and coordination detection in Phase 3 was the single most consequential change, because it is the first point at which the system can read structure — clusters of accounts moving in lockstep — instead of judging each voter in isolation. Everything before it is blind to collusion by construction.
 
-**Finding 3: Multiple Independent Signals are More Robust Than Any Single Signal**. The progressive improvement in anomaly recall across phases (0.000 → 0.480 → 0.680 → 0.800 → 0.840) demonstrates that each new signal category (graph, spatial, behavioral) catches different subsets of malicious users. No single signal is sufficient, but their combination provides comprehensive coverage.
+The phases also show why no one signal is enough. Anomaly recall climbs 0.000 → 0.480 → 0.680 → 0.800 → 0.840 as graph, spatial and behavioural signals come online, and the reason it keeps climbing is that each family catches a different slice of bad actors. The coverage comes from the combination, not from any single detector.
 
-**Finding 4: ML Augmentation Closes the Accuracy Gap**. The jump from 0.920 to 1.000 accuracy in Phase 5 demonstrates that ML models can learn patterns in the feature space that pure Bayesian estimation misses. The ML component acts as a corrective layer that catches edge cases where statistical aggregation alone produces ambiguous results.
+The learned layer earns its place at the end. The move from 0.920 to 1.000 in Phase 5 comes from the model picking up feature-space patterns that pure aggregation leaves ambiguous — it behaves like a corrective pass over the borderline cases rather than a replacement for the crowd estimate.
 
-**Finding 5: The System is Remarkably Robust Under Stress**. The stress test results — maintaining perfect accuracy even with 64% adversarial users, 50% bots, or only 60 interactions — demonstrate that the system's conservative design pays dividends under extreme conditions. The confidence correction mechanism is particularly crucial in these scenarios, preventing masses of low-evidence malicious accounts from overwhelming the system.
+The behaviour under stress was the most reassuring part. Accuracy held at 1.000 even with 64% adversarial users, with bots at half the population, and with as few as 60 interactions. The confidence correction is doing quiet work here: it stops a flood of fresh, low-evidence malicious accounts from swinging a score, because thin evidence simply does not count for much.
 
-**Finding 6: Trust Can Only Decrease, Never Inflate**. The safety constraint T_i ≤ R*_i is a simple rule but has profound implications. It means that no amount of social engineering (building connections with trusted users) can boost a malicious user's trust above what their individual behavior warrants. This one-directional trust flow is key to the system's attack resistance.
+Underneath all of it is one small rule with outsized effect: T_i ≤ R*_i. Trust can fall through the graph but never rise above what a user has earned alone, so befriending trusted accounts buys an attacker nothing. That one-directional flow is the backbone of the system's resistance.
 
 ---
 
@@ -1892,21 +1898,21 @@ The experimental evaluation yielded several notable findings:
 
 ## 5.3 Future Work
 
-While the current NCPS implementation demonstrates strong performance in simulation, several directions for future work could significantly enhance its practical utility:
+The simulation results are encouraging, but they are still simulation results. Several lines of work would move NCPS closer to something that could be deployed and trusted in the field.
 
-**1. Real-World Dataset Validation**: The current evaluation uses synthetic simulation data. Validating the system with real-world datasets from platforms like Twitter, Reddit, or WhatsApp would provide much stronger evidence of practical effectiveness. Particualr challenges include obtaining ground truth labels for local news and modeling realistic user population distributions.
+**1. Real-World Dataset Validation**: All of the numbers here come from synthetic data. The most important next step is to test against real traces — from Twitter, Reddit, or WhatsApp groups — where the hard parts are getting trustworthy ground-truth labels for local events and reproducing the messy distribution of real user behaviour rather than a tidy simulated one.
 
 **2. Content Analysis Integration**: The current system does not analyze the textual or visual content of posts. Integrating NLP-based credibility signals (sentiment analysis, claim verification, source extraction) and image forensics (manipulated image detection) would add a powerful complementary dimension to the network-based signals.
 
 **3. Administrative Moderation Interface**: A dedicated admin panel for human moderators to review flagged content, adjust credibility scores, and manage user accounts would be essential for real-world deployment. The admin interface should provide tools for escalation, appeal handling, and policy enforcement.
 
-**4. Push Notifications and Real-Time Alerts**: Currently, users must actively visit the application to see updates. Implementing push notifications for high-urgency, high-credibility posts in the user's vicinity would significantly increase the system's utility for time-sensitive local events like emergencies or public safety incidents.
+**4. Real-Time Alerts and Notifications (Implemented)**: The current system includes SSE-based real-time alert streaming, an alerts inbox with unread/read state management, and Web Push subscription storage for registered users. Users receive immediate notifications for high-urgency, high-credibility posts in their vicinity. Future enhancements could extend this to native mobile push notifications and configurable email digest notifications for users who prefer periodic summaries.
 
 **5. Advanced Graph Neural Networks**: Replacing the current EigenTrust-inspired propagation with more sophisticated GNN architectures (GraphSAGE, GAT) could improve trust estimation, particularly in sparse graphs where limited edge information makes simple propagation less effective.
 
 **6. Privacy-Preserving Location**: The current location system collects and stores user coordinates, which raises privacy concerns. Implementing differential privacy mechanisms or zero-knowledge proofs for proximity verification would allow spatial trust computation without exposing exact user locations.
 
-**7. Explainable AI Module**: Adding explanations for credibility assessments (e.g., "This post has low credibility because 72% of its supporters exhibit anomalous behavior") would increase user trust in the system and help educate users about misinformation patterns.
+**7. Explainable AI Module (Implemented)**: The system now provides a dedicated `/api/post/{id}/explain` endpoint that returns a full decision trace for any post's credibility assessment. The explanation includes component-level decomposition of C_Bayes, evidence mass, variance, individual vote weights, propagation gate conditions, and alert gate status. Future enhancements could add natural language explanations for non-technical users and interactive visual decision trees that allow users to explore the reasoning process step by step.
 
 **8. Mobile Application**: Developing native mobile apps (iOS and Android) would dramatically increase the system's reach and usability for local news reporting, where users are typically on mobile devices at event locations.
 
@@ -1914,7 +1920,7 @@ While the current NCPS implementation demonstrates strong performance in simulat
 
 **10. Continuous Threshold Learning**: Currently, the system uses fixed thresholds (e.g., anomaly threshold = 0.3, propagation credibility threshold = 0.6). Implementing adaptive threshold learning that adjusts these values based on observed performance could improve the system's adaptability to different community dynamics.
 
-**11. Observability and Monitoring**: For production deployment, comprehensive monitoring, logging, and alerting infrastructure would be needed. This includes dashboards for system administrators to track credibility distributions, detect systematic attacks, and monitor system health in real-time.
+**11. Observability and Monitoring (Implemented)**: The system now includes structured request logging with correlation IDs, health and readiness check endpoints (`/api/health`, `/api/ready`), a metrics endpoint exposing key system statistics, and an admin observability panel for monitoring credibility distributions and system status. Future enhancements could integrate with industry-standard monitoring stacks such as Prometheus and Grafana for production-grade dashboards, distributed tracing, and automated alerting on anomalous system behavior.
 
 **12. Federation**: Enabling multiple NCPS instances across different geographic regions to share trust information (while maintaining local autonomy) could create a federated verification network that combines the benefits of local community knowledge with broader credibility signals.
 

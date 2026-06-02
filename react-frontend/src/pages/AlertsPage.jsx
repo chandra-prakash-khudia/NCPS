@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert, Button, Card, Chip, Stack, Typography,
+  Alert, Box, Button, Card, Chip, Stack, Typography,
 } from '@mui/material';
-import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
-import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
+import NotificationsOffRoundedIcon from '@mui/icons-material/NotificationsOffRounded';
+import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import { Link as RouterLink } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
 import { fetchAlerts, markAlertRead, markAllAlertsRead } from '../services/api';
 import { formatDistance, formatRelativeTime } from '../utils/helpers';
 
@@ -42,34 +44,28 @@ const AlertsPage = () => {
     }
   };
 
-  if (loading) return <LoadingSpinner text="Loading hyperlocal alerts..." />;
+  if (loading) return <LoadingSpinner text="Loading hyperlocal alerts…" />;
 
   return (
-    <Stack spacing={2}>
-      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1.5}>
-          <Stack spacing={0.5}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <NotificationsActiveOutlinedIcon color="primary" />
-              <Typography variant="h4">Alerts</Typography>
-            </Stack>
-            <Typography color="text.secondary">
-              Hyperlocal notifications are generated from credibility, urgency, and distance checks.
-            </Typography>
-          </Stack>
+    <Box className="rise-in">
+      <PageHeader
+        eyebrow="Hyperlocal"
+        title="Alerts"
+        subtitle="Notifications generated from credibility, urgency, and distance checks for reports near you."
+        actions={
           <Stack direction="row" spacing={1} alignItems="center">
-            <Chip label={`${unreadCount} unread`} color={unreadCount ? 'warning' : 'default'} />
-            <Button startIcon={<DoneAllOutlinedIcon />} variant="outlined" disabled={!unreadCount} onClick={handleMarkAll}>
-              Mark All Read
+            <Chip label={`${unreadCount} unread`} color={unreadCount ? 'warning' : 'default'} sx={{ fontWeight: 600 }} />
+            <Button startIcon={<DoneAllRoundedIcon />} variant="outlined" size="small" disabled={!unreadCount} onClick={handleMarkAll}>
+              Mark all read
             </Button>
           </Stack>
-        </Stack>
-      </Card>
+        }
+      />
 
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {alerts.length === 0 ? (
-        <Alert severity="info">No alerts yet. Enable location and follow nearby reports to receive updates.</Alert>
+        <EmptyState icon={<NotificationsOffRoundedIcon />} title="No alerts yet" description="Enable location and watch nearby reports — credible, urgent updates within range will surface here." />
       ) : (
         <Stack spacing={1.2}>
           {alerts.map((item) => (
@@ -106,7 +102,7 @@ const AlertsPage = () => {
           ))}
         </Stack>
       )}
-    </Stack>
+    </Box>
   );
 };
 

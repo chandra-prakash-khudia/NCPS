@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert, Button, Card, Chip, FormControlLabel, MenuItem, Select, Stack, Switch, TextField, Typography,
+  Alert, Box, Button, Card, Chip, FormControlLabel, MenuItem, Select, Stack, Switch, TextField, Typography,
 } from '@mui/material';
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
 import { getPreferences, updatePreferences } from '../services/api';
 import { categoryOptions } from '../utils/helpers';
 
@@ -51,17 +51,13 @@ const SettingsPage = () => {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 760, mx: 'auto' }}>
-      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <TuneOutlinedIcon color="primary" />
-          <Typography variant="h4">Preferences</Typography>
-        </Stack>
-        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Control feed topics, default radius, and hyperlocal alerts.
-        </Typography>
-      </Card>
-
+    <Box className="rise-in" sx={{ maxWidth: 760, mx: 'auto' }}>
+      <PageHeader
+        eyebrow="Account"
+        title="Preferences"
+        subtitle="Control feed topics, default radius, and hyperlocal alerts."
+      />
+      <Stack spacing={2}>
       {message && <Alert severity={message.includes('Could') ? 'error' : 'success'}>{message}</Alert>}
 
       <Card className="glass-surface" sx={{ p: 2 }}>
@@ -126,10 +122,11 @@ const SettingsPage = () => {
         </Stack>
       </Card>
 
-      <Button variant="contained" startIcon={<SaveOutlinedIcon />} disabled={saving} onClick={save}>
-        {saving ? 'Saving...' : 'Save Preferences'}
+      <Button variant="contained" startIcon={<SaveRoundedIcon />} disabled={saving} onClick={save} sx={{ alignSelf: 'flex-start' }}>
+        {saving ? 'Saving…' : 'Save preferences'}
       </Button>
-    </Stack>
+      </Stack>
+    </Box>
   );
 };
 

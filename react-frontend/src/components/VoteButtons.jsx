@@ -5,6 +5,7 @@ import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
 import ThumbUpRoundedIcon from '@mui/icons-material/ThumbUpRounded';
 import ThumbDownRoundedIcon from '@mui/icons-material/ThumbDownRounded';
 import { votePost } from '../services/api';
+import { CRED_GREEN, CRED_RED } from '../utils/helpers';
 import { toast } from 'react-toastify';
 
 const VoteButtons = ({ postId, voteCount = 0, initialVote = null, onVoteComplete }) => {
@@ -51,11 +52,13 @@ const VoteButtons = ({ postId, voteCount = 0, initialVote = null, onVoteComplete
           minWidth: 0,
           fontSize: '0.8rem',
           ...(userVote === 1 && {
-            background: alpha('#00ba7c', 0.15),
-            color: '#00ba7c',
-            border: `1px solid ${alpha('#00ba7c', 0.3)}`,
+            backgroundImage: 'none',
+            background: alpha(CRED_GREEN, 0.15),
+            color: CRED_GREEN,
+            border: `1px solid ${alpha(CRED_GREEN, 0.3)}`,
             '&:hover': {
-              background: alpha('#00ba7c', 0.2),
+              backgroundImage: 'none',
+              background: alpha(CRED_GREEN, 0.2),
             },
           }),
         }}
@@ -74,16 +77,18 @@ const VoteButtons = ({ postId, voteCount = 0, initialVote = null, onVoteComplete
           minWidth: 0,
           fontSize: '0.8rem',
           ...(userVote === -1 && {
-            background: alpha('#f4212e', 0.15),
-            color: '#f4212e',
-            border: `1px solid ${alpha('#f4212e', 0.3)}`,
+            backgroundImage: 'none',
+            background: alpha(CRED_RED, 0.15),
+            color: CRED_RED,
+            border: `1px solid ${alpha(CRED_RED, 0.3)}`,
             '&:hover': {
-              background: alpha('#f4212e', 0.2),
+              backgroundImage: 'none',
+              background: alpha(CRED_RED, 0.2),
             },
           }),
         }}
       >
-        Fake
+        Dispute
       </Button>
       <Box sx={{ flex: 1 }} />
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>

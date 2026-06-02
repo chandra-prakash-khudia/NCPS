@@ -13,7 +13,10 @@ import AlertsPage from './pages/AlertsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import SettingsPage from './pages/SettingsPage';
 import ObservabilityPage from './pages/ObservabilityPage';
+import BookmarksPage from './pages/BookmarksPage';
 import LoadingSpinner from './components/LoadingSpinner';
+import CommandPalette from './components/CommandPalette';
+import OnboardingTour from './components/OnboardingTour';
 import { useAuth } from './context/AuthContext';
 import { getAuthToken } from './services/api';
 import { toast } from 'react-toastify';
@@ -78,6 +81,8 @@ function App() {
   return (
     <Box sx={{ minHeight: '100vh' }}>
       {isAuthenticated && <Navbar />}
+      {isAuthenticated && <CommandPalette />}
+      {isAuthenticated && <OnboardingTour />}
       <main className={isAuthenticated ? 'main-content' : undefined}>
         <Routes>
           <Route
@@ -92,6 +97,7 @@ function App() {
           <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
           <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
+          <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
           <Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/observability" element={<ProtectedRoute><ObservabilityPage /></ProtectedRoute>} />

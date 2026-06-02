@@ -22,8 +22,9 @@ import {
 import {
   formatRelativeTime, getCredibilityColor, getCredibilityLabel,
   getIndicatorInfo, getUrgencyInfo, formatDistance, getRadiusTierLabel,
+  BRAND_INDIGO, CRED_AMBER,
 } from '../utils/helpers';
-import { parseArticleContent, resolveMediaUrl } from '../utils/articleFormat';
+import { parseArticleContent, resolveMediaUrl, formatCategoryLabel } from '../utils/articleFormat';
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -100,14 +101,14 @@ const PostDetailPage = () => {
   };
 
   return (
-    <Stack spacing={1.8}>
+    <Stack spacing={1.8} className="rise-in" sx={{ maxWidth: 820, mx: 'auto' }}>
       {/* Back button */}
       <Button
         startIcon={<ArrowBackRoundedIcon />}
         onClick={() => navigate(-1)}
         sx={{ alignSelf: 'flex-start', color: 'text.secondary' }}
       >
-        Back to Feed
+        Back
       </Button>
 
       {/* Main content card */}
@@ -126,6 +127,10 @@ const PostDetailPage = () => {
         <Stack spacing={3}>
           {/* Indicators */}
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+            <Chip
+              label={formatCategoryLabel(post.category)}
+              sx={{ fontWeight: 700, bgcolor: 'var(--accent-soft)', color: 'primary.main' }}
+            />
             {urgInfo && (
               <Chip
                 label={urgInfo.label}
@@ -158,18 +163,18 @@ const PostDetailPage = () => {
             />
           )}
 
-          <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.5 }}>
+          <Typography variant="h4" sx={{ fontWeight: 760, lineHeight: 1.22, letterSpacing: '-0.02em', fontSize: { xs: '1.7rem', md: '2.1rem' } }}>
             {headline}
           </Typography>
 
           {deck && (
-            <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+            <Typography variant="h6" color="text.secondary" sx={{ lineHeight: 1.5, fontWeight: 500 }}>
               {deck}
             </Typography>
           )}
 
           {paragraphs.map((paragraph, index) => (
-            <Typography key={index} variant="body1" sx={{ lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+            <Typography key={index} variant="body1" sx={{ lineHeight: 1.75, whiteSpace: 'pre-wrap', fontSize: '1.02rem' }}>
               {paragraph}
             </Typography>
           ))}
@@ -264,8 +269,8 @@ const PostDetailPage = () => {
                   value={Math.min((post.variance || 0) * 400, 100)}
                   sx={{
                     height: 8, borderRadius: 4,
-                    bgcolor: 'rgba(245,158,11,0.1)',
-                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: '#f59e0b' },
+                    bgcolor: alpha(CRED_AMBER, 0.12),
+                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: CRED_AMBER },
                   }}
                 />
               </Box>
@@ -285,8 +290,8 @@ const PostDetailPage = () => {
                   value={Math.min(((post.n_effective || 0) / 20) * 100, 100)}
                   sx={{
                     height: 8, borderRadius: 4,
-                    bgcolor: 'rgba(59,130,246,0.1)',
-                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: '#1d9bf0' },
+                    bgcolor: alpha(BRAND_INDIGO, 0.12),
+                    '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: BRAND_INDIGO },
                   }}
                 />
               </Box>

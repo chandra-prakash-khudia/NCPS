@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Box, Card, Stack, Typography,
+  Box, Card, Stack, Typography, alpha,
 } from '@mui/material';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchFeed, updateLocation } from '../services/api';
-import { getCredibilityColor, getRadiusTierLabel } from '../utils/helpers';
+import { getCredibilityColor, getRadiusTierLabel, CRED_GREEN, CRED_AMBER, CRED_RED, BRAND_INDIGO } from '../utils/helpers';
 
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTR = '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>';
@@ -73,7 +73,7 @@ const MapPage = () => {
 
         // User marker
         const userIcon = L.divIcon({
-          html: '<div style="width:16px;height:16px;border-radius:50%;background:#1d9bf0;border:3px solid rgba(29,155,240,0.3);"></div>',
+          html: `<div style="width:16px;height:16px;border-radius:50%;background:${BRAND_INDIGO};border:3px solid rgba(99,102,241,0.3);box-shadow:0 0 0 3px rgba(99,102,241,0.18);"></div>`,
           iconSize: [16, 16],
           className: '',
         });
@@ -157,10 +157,10 @@ const MapPage = () => {
         </Typography>
         <Stack spacing={0.8} sx={{ mt: 1 }}>
           {[
-            { color: '#00ba7c', label: 'High Credibility (≥70%)' },
-            { color: '#f59e0b', label: 'Medium (40-70%)' },
-            { color: '#f4212e', label: 'Low Credibility (<40%)' },
-            { color: '#1d9bf0', label: 'Your Location' },
+            { color: CRED_GREEN, label: 'High credibility (≥70%)' },
+            { color: CRED_AMBER, label: 'Medium (40–70%)' },
+            { color: CRED_RED, label: 'Low credibility (<40%)' },
+            { color: BRAND_INDIGO, label: 'Your location' },
           ].map((item) => (
             <Stack key={item.label} direction="row" spacing={1} alignItems="center">
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
@@ -185,9 +185,10 @@ const MapPage = () => {
           <Box sx={{
             position: 'absolute', inset: 0, zIndex: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            bgcolor: 'rgba(10,14,23,0.8)',
+            bgcolor: (t) => alpha(t.palette.background.default, 0.82),
+            backdropFilter: 'blur(2px)',
           }}>
-            <LoadingSpinner text="Loading map..." />
+            <LoadingSpinner text="Loading map…" />
           </Box>
         )}
       </Box>

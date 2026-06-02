@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert, Box, Button, Card, Chip, LinearProgress, Stack, TextField, Typography, alpha,
 } from '@mui/material';
-import LeaderboardOutlinedIcon from '@mui/icons-material/LeaderboardOutlined';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
 import { getCityLeaderboard } from '../services/api';
-import { getCredibilityColor } from '../utils/helpers';
+import { getCredibilityColor, CRED_AMBER } from '../utils/helpers';
 
 const LeaderboardPage = () => {
   const [city, setCity] = useState('');
@@ -42,30 +44,24 @@ const LeaderboardPage = () => {
   };
 
   return (
-    <Stack spacing={2}>
-      <Card className="glass-surface" sx={{ p: { xs: 2, md: 2.5 } }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5}>
-          <Stack spacing={0.5}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <LeaderboardOutlinedIcon color="primary" />
-              <Typography variant="h4">City Leaderboard</Typography>
-            </Stack>
-            <Typography color="text.secondary">
-              Trusted local contributors ranked by trust, activity, and verification participation in {titleCity}.
-            </Typography>
-          </Stack>
-          <Stack component="form" onSubmit={submit} direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+    <Box className="rise-in">
+      <PageHeader
+        eyebrow="Community"
+        title="City leaderboard"
+        subtitle={`Trusted local contributors ranked by trust, activity, and verification in ${titleCity}.`}
+        actions={
+          <Stack component="form" onSubmit={submit} direction="row" spacing={1}>
             <TextField size="small" label="City" value={city} onChange={(event) => setCity(event.target.value)} />
-            <Button type="submit" variant="contained" startIcon={<SearchOutlinedIcon />}>Search</Button>
+            <Button type="submit" variant="contained" startIcon={<SearchRoundedIcon />}>Search</Button>
           </Stack>
-        </Stack>
-      </Card>
+        }
+      />
 
-      {loading ? <LoadingSpinner text="Loading contributors..." /> : null}
-      {error ? <Alert severity="error">{error}</Alert> : null}
+      {loading ? <LoadingSpinner text="Loading contributors…" /> : null}
+      {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
 
       {!loading && rows.length === 0 ? (
-        <Alert severity="info">No contributors found{submittedCity ? ` for ${submittedCity}` : ''}.</Alert>
+        <EmptyState icon={<GroupsRoundedIcon />} title="No contributors found" description={submittedCity ? `Nobody ranked for ${submittedCity} yet.` : 'Once people vote and report, they appear here.'} />
       ) : (
         <Stack spacing={1.2}>
           {rows.map((user, index) => {
@@ -81,9 +77,10 @@ const LeaderboardPage = () => {
                         borderRadius: 1.5,
                         display: 'grid',
                         placeItems: 'center',
-                        bgcolor: index < 3 ? alpha('#f59e0b', 0.14) : alpha(color, 0.12),
-                        color: index < 3 ? '#d97706' : color,
-                        fontWeight: 900,
+                        bgcolor: index < 3 ? alpha(CRED_AMBER, 0.14) : alpha(color, 0.12),
+                        color: index < 3 ? CRED_AMBER : color,
+                        fontWeight: 800,
+                        fontFamily: 'var(--mono)',
                       }}
                     >
                       #{index + 1}
@@ -121,7 +118,7 @@ const LeaderboardPage = () => {
           })}
         </Stack>
       )}
-    </Stack>
+    </Box>
   );
 };
 

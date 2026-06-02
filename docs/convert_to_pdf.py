@@ -11,12 +11,105 @@ print("Reading markdown...")
 with open(REPORT_MD, "r", encoding="utf-8") as f:
     md_text = f.read()
 
+# --- LaTeX -> readable Unicode/HTML -----------------------------------------
+# The report writes formulas in $...$ / $$...$$ LaTeX. Rather than dumping the
+# raw commands into the PDF, translate the common constructs to Unicode symbols
+# with HTML sub/superscripts so the math reads like properly typeset notation.
+_SYMBOLS = {
+    'alpha': 'α', 'beta': 'β', 'gamma': 'γ', 'delta': 'δ', 'Delta': 'Δ',
+    'epsilon': 'ε', 'varepsilon': 'ε', 'theta': 'θ', 'lambda': 'λ', 'mu': 'µ',
+    'nu': 'ν', 'sigma': 'σ', 'Sigma': 'Σ', 'tau': 'τ', 'phi': 'φ', 'rho': 'ρ',
+    'pi': 'π', 'omega': 'ω', 'eta': 'η', 'kappa': 'κ', 'times': '×', 'cdot': '·',
+    'pm': '±', 'leq': '≤', 'le': '≤', 'geq': '≥', 'ge': '≥', 'neq': '≠',
+    'approx': '≈', 'forall': '∀', 'exists': '∃', 'in': '∈', 'notin': '∉',
+    'infty': '∞', 'rightarrow': '→', 'Rightarrow': '⇒', 'to': '→', 'sum': 'Σ',
+    'prod': '∏', 'partial': '∂', 'nabla': '∇', 'propto': '∝', 'sim': '∼',
+    'wedge': '∧', 'vee': '∨', 'cup': '∪', 'cap': '∩', 'subseteq': '⊆',
+    'langle': '⟨', 'rangle': '⟩', 'cdots': '⋯', 'ldots': '…', 'circ': '∘',
+}
+
+# sentinels keep LaTeX-escaped literals safe from later brace/command stripping
+_ESCAPES = {r'\{': '\x01', r'\}': '\x02', r'\_': '\x03', r'\|': '\x04',
+            r'\%': '%', r'\&': '&', r'\#': '#', r'\$': '$'}
+_RESTORE = {'\x01': '{', '\x02': '}', '\x03': '_', '\x04': '|'}
+
+
+def _read_braced(s, i):
+    """Given s[i] == '{', return (inner_text, index_after_closing_brace)."""
+    depth, j = 0, i
+    while j < len(s):
+        if s[j] == '{':
+            depth += 1
+        elif s[j] == '}':
+            depth -= 1
+            if depth == 0:
+                return s[i + 1:j], j + 1
+        j += 1
+    return s[i + 1:], len(s)
+
+
+def _replace_frac(s):
+    """Rewrite \\frac{A}{B} -> (A)/(B), honouring nested/braced arguments."""
+    out, i = [], 0
+    while i < len(s):
+        if s.startswith(r'\frac', i):
+            k = i + 5
+            while k < len(s) and s[k] == ' ':
+                k += 1
+            if k < len(s) and s[k] == '{':
+                num, k = _read_braced(s, k)
+                while k < len(s) and s[k] == ' ':
+                    k += 1
+                if k < len(s) and s[k] == '{':
+                    den, k = _read_braced(s, k)
+                    out.append('(' + _replace_frac(num) + ')/(' + _replace_frac(den) + ')')
+                    i = k
+                    continue
+        out.append(s[i])
+        i += 1
+    return ''.join(out)
+
+
+def latexify(s):
+    s = s.strip()
+    for esc, sent in _ESCAPES.items():
+        s = s.replace(esc, sent)
+    # textual wrappers and the indicator symbol
+    s = re.sub(r'\\mathbb\{([^{}]*)\}', r'\1', s)
+    s = re.sub(r'\\(?:text|mathrm|mathbf|mathit|mathcal|operatorname)\{([^{}]*)\}', r'\1', s)
+    s = s.replace('\\left', '').replace('\\right', '')
+    s = _replace_frac(s)
+    # \sqrt{...}
+    while True:
+        m = re.search(r'\\sqrt\{', s)
+        if not m:
+            break
+        inner, end = _read_braced(s, m.end() - 1)
+        s = s[:m.start()] + '√(' + inner + ')' + s[end:]
+    # named symbols, longest first so prefixes don't win
+    for name, ch in sorted(_SYMBOLS.items(), key=lambda kv: -len(kv[0])):
+        s = re.sub(r'\\' + name + r'(?![A-Za-z])', ch, s)
+    # spacing commands
+    s = re.sub(r'\\(?:quad|qquad|,|;|:|!)', ' ', s)
+    # subscripts and superscripts
+    s = re.sub(r'_\{([^{}]*)\}', r'<sub>\1</sub>', s)
+    s = re.sub(r'_([A-Za-z0-9])', r'<sub>\1</sub>', s)
+    s = re.sub(r'\^\{([^{}]*)\}', r'<sup>\1</sup>', s)
+    s = re.sub(r'\^([A-Za-z0-9*+\-])', r'<sup>\1</sup>', s)
+    # any leftover commands: drop the backslash, keep the word
+    s = re.sub(r'\\([A-Za-z]+)', r'\1', s)
+    s = s.replace('{', '').replace('}', '')
+    for sent, ch in _RESTORE.items():
+        s = s.replace(sent, ch)
+    return s
+
+
 # Clean markdown
 md_text = re.sub(r'<!--.*?-->', '', md_text, flags=re.DOTALL)
 md_text = re.sub(r'<div[^>]*page-break[^>]*>.*?</div>', '<div class="pagebreak"></div>', md_text, flags=re.DOTALL)
 md_text = re.sub(r'<br\s*/?>', '<br/>', md_text)
-md_text = re.sub(r'\$\$(.*?)\$\$', r'<i>\1</i>', md_text, flags=re.DOTALL)
-md_text = re.sub(r'\$(.*?)\$', r'<i>\1</i>', md_text)
+md_text = re.sub(r'\$\$(.*?)\$\$', lambda m: f'<div class="mathblock">{latexify(m.group(1))}</div>', md_text, flags=re.DOTALL)
+md_text = re.sub(r'\$(.*?)\$', lambda m: f'<span class="math">{latexify(m.group(1))}</span>', md_text)
 
 print("Converting to HTML...")
 md_converter = markdown.Markdown(extensions=['tables', 'fenced_code'])
@@ -78,6 +171,21 @@ body {{
     margin: 0;
     padding: 0;
 }}
+
+/* === MATH === */
+.mathblock {{
+    text-align: center;
+    font-family: "Cambria Math", "Latin Modern Math", "Times New Roman", serif;
+    font-size: 11.5pt;
+    margin: 10px 0;
+    page-break-inside: avoid;
+}}
+.math {{
+    font-family: "Cambria Math", "Latin Modern Math", "Times New Roman", serif;
+    white-space: nowrap;
+}}
+.mathblock sub, .math sub {{ font-size: 0.72em; vertical-align: -0.28em; }}
+.mathblock sup, .math sup {{ font-size: 0.72em; vertical-align: 0.42em; }}
 
 /* === HEADINGS — IEEE Standard Hierarchy === */
 

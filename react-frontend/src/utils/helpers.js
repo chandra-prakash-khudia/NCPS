@@ -11,11 +11,19 @@ export function formatRelativeTime(isoStr) {
   }
 }
 
+// Shared semantic hues — mid-tone values chosen to stay legible on both the
+// near-black dark surface and the off-white light surface.
+export const CRED_GREEN = '#10b981';
+export const CRED_AMBER = '#f59e0b';
+export const CRED_RED = '#ef4456';
+export const BRAND_INDIGO = '#6366f1';
+export const CYAN = '#06b6d4';
+
 /** Get color based on credibility score (0-1) */
 export function getCredibilityColor(score) {
-  if (score >= 0.7) return '#00ba7c';
-  if (score >= 0.4) return '#f59e0b';
-  return '#f4212e';
+  if (score >= 0.7) return CRED_GREEN;
+  if (score >= 0.4) return CRED_AMBER;
+  return CRED_RED;
 }
 
 /** Get label for credibility score */
@@ -45,32 +53,32 @@ export function getRadiusTierLabel(km) {
 
 /** Get urgency badge info */
 export function getUrgencyInfo(urgency) {
-  if (urgency >= 0.7) return { label: 'High Urgency', color: '#f4212e' };
-  if (urgency >= 0.4) return { label: 'Medium', color: '#f59e0b' };
-  if (urgency >= 0.1) return { label: 'Low', color: '#00ba7c' };
+  if (urgency >= 0.7) return { label: 'High urgency', color: CRED_RED };
+  if (urgency >= 0.4) return { label: 'Medium', color: CRED_AMBER };
+  if (urgency >= 0.1) return { label: 'Low', color: CRED_GREEN };
   return null;
 }
 
 /** Get indicator info */
 export function getIndicatorInfo(name) {
   const map = {
-    'Community Verified': { color: '#00ba7c', bg: 'rgba(0,186,124,0.12)', icon: 'OK' },
-    'Trending':           { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: 'T' },
-    'Frequently Discussed': { color: '#1d9bf0', bg: 'rgba(29,155,240,0.12)', icon: 'D' },
-    'Recommended':        { color: '#1d9bf0', bg: 'rgba(29,155,240,0.12)', icon: 'R' },
-    'Hyperlocal':         { color: '#06b6d4', bg: 'rgba(6,182,212,0.12)', icon: '1km' },
-    'Global':             { color: '#1d9bf0', bg: 'rgba(29,155,240,0.12)', icon: 'G' },
+    'Community Verified':   { color: CRED_GREEN, bg: 'rgba(16,185,129,0.12)', icon: 'OK' },
+    'Trending':             { color: CRED_AMBER, bg: 'rgba(245,158,11,0.12)', icon: 'T' },
+    'Frequently Discussed': { color: BRAND_INDIGO, bg: 'rgba(99,102,241,0.12)', icon: 'D' },
+    'Recommended':          { color: BRAND_INDIGO, bg: 'rgba(99,102,241,0.12)', icon: 'R' },
+    'Hyperlocal':           { color: CYAN, bg: 'rgba(6,182,212,0.12)', icon: '1km' },
+    'Global':               { color: BRAND_INDIGO, bg: 'rgba(99,102,241,0.12)', icon: 'G' },
   };
-  return map[name] || { color: '#71767b', bg: 'rgba(113,118,123,0.12)', icon: '.' };
+  return map[name] || { color: '#8b8d98', bg: 'rgba(139,141,152,0.12)', icon: '.' };
 }
 
 /** Get trust badge for user */
 export function getTrustBadge(trustScore) {
-  if (trustScore >= 0.9) return { label: 'Expert', color: '#f59e0b', icon: 'Top' };
-  if (trustScore >= 0.7) return { label: 'Trusted', color: '#00ba7c', icon: 'T' };
-  if (trustScore >= 0.5) return { label: 'Verifier', color: '#1d9bf0', icon: 'V' };
-  if (trustScore >= 0.3) return { label: 'Contributor', color: '#536471', icon: 'C' };
-  return { label: 'Newcomer', color: '#71767b', icon: 'N' };
+  if (trustScore >= 0.9) return { label: 'Expert', color: CRED_AMBER, icon: 'Top' };
+  if (trustScore >= 0.7) return { label: 'Trusted', color: CRED_GREEN, icon: 'T' };
+  if (trustScore >= 0.5) return { label: 'Verifier', color: BRAND_INDIGO, icon: 'V' };
+  if (trustScore >= 0.3) return { label: 'Contributor', color: '#8b8d98', icon: 'C' };
+  return { label: 'Newcomer', color: '#8b8d98', icon: 'N' };
 }
 
 export const categoryOptions = [
