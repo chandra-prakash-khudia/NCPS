@@ -33,7 +33,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
-from webapp.db import dispose_webapp_database, get_database_kind, get_db, init_webapp_database
+from webapp.db import dispose_webapp_database, get_database_kind, get_db, get_session_factory, init_webapp_database
 from webapp.models import AuthAccount
 from webapp.security import (
     AuthError,
@@ -45,15 +45,33 @@ from webapp.security import (
     verify_password,
 )
 from webapp.store import DuplicateReportError, DuplicateVoteError, VALID_CATEGORIES, WebappStore
+from webapp.pipeline import BackgroundPipeline
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 auth_scheme = HTTPBearer(auto_error=False)
 
 
+_pipeline: BackgroundPipeline | None = None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _pipeline
     init_webapp_database()
+
+    # Start background signal pipeline (graph trust, spatial, extended signals)
+    _pipeline = BackgroundPipeline(get_session_factory(), interval_seconds=60)
+    _pipeline.start()
+    logger.info("Background signal pipeline started (14-signal engine)")
+
     yield
+
+    if _pipeline:
+        _pipeline.stop()
     dispose_webapp_database()
 
 
@@ -93,6 +111,68 @@ async def observability_middleware(request: Request, call_next):
 
     response.headers["X-NCPS-Latency-Ms"] = str(elapsed_ms)
     return response
+
+
+@app.middleware("http")
+async def metadata_collection_middleware(request: Request, call_next):
+    """
+    Collect device/IP/timing metadata from HTTP requests for signals 10-14.
+    Stores metadata for authenticated requests only.
+    Skipped for SQLite (test environment) to avoid concurrent write deadlocks.
+    """
+    response = await call_next(request)
+
+    # Only collect on mutating API calls (votes, posts, location updates)
+    if request.method not in ("POST", "PUT", "PATCH"):
+        return response
+    if not request.url.path.startswith("/api/"):
+        return response
+
+    # Skip metadata storage for SQLite (avoids deadlocks in test environment)
+    if get_database_kind() == "sqlite":
+        return response
+
+    auth_header = request.headers.get("authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return response
+
+    try:
+        token = auth_header.split(" ", 1)[1]
+        payload = verify_access_token(token)
+        user_id = payload.get("sub")
+        if not user_id:
+            return response
+
+        ip_address = request.client.host if request.client else None
+        device_id = request.headers.get("x-device-id")
+        user_agent = request.headers.get("user-agent", "")
+
+        from webapp.models import UserRequestMetadata
+        session = get_session_factory()()
+        try:
+            session.add(UserRequestMetadata(
+                user_id=_parse_uuid_safe(user_id),
+                device_id=device_id,
+                ip_address=ip_address,
+                user_agent=user_agent[:500] if user_agent else None,
+            ))
+            session.commit()
+        except Exception:
+            session.rollback()
+        finally:
+            session.close()
+    except Exception:
+        pass  # Never let metadata collection break the request
+
+    return response
+
+
+def _parse_uuid_safe(value: str) -> uuid.UUID | None:
+    """Parse UUID without raising on invalid input."""
+    try:
+        return uuid.UUID(str(value))
+    except (ValueError, AttributeError):
+        return None
 
 _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 webapp_dir = os.path.join(os.path.dirname(_backend_dir), "webapp")

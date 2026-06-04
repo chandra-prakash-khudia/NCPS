@@ -32,6 +32,7 @@ REQUIRED_TABLES = {
     "content_reports",
     "web_push_subscriptions",
     "observability_events",
+    "user_request_metadata",
 }
 
 _engine: Engine | None = None

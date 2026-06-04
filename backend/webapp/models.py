@@ -215,3 +215,28 @@ class ObservabilityEvent(Base):
     __table_args__ = (
         Index("idx_observability_type_time", "event_type", "created_at"),
     )
+
+
+class UserRequestMetadata(Base):
+    """Raw request metadata for computing extended signals 10-14."""
+
+    __tablename__ = "user_request_metadata"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    device_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index("idx_user_metadata_user_time", "user_id", "timestamp"),
+    )

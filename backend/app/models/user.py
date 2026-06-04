@@ -42,6 +42,17 @@ class User(Base):
     lat: Mapped[float | None] = mapped_column(Float, nullable=True)
     lon: Mapped[float | None] = mapped_column(Float, nullable=True)
     location_confidence: Mapped[float] = mapped_column(Float, default=0.5, doc="L_i ∈ [0,1]")
+
+    # ── Graph (Phase 3) ──
+    graph_trust: Mapped[float | None] = mapped_column(Float, nullable=True, doc="Graph-propagated T_i")
+    coordination_score: Mapped[float | None] = mapped_column(Float, nullable=True, doc="D₄ coordination")
+
+    # ── Spatial anomaly (Phase 4) ──
+    location_inconsistency: Mapped[float | None] = mapped_column(Float, nullable=True, doc="D₅ location inconsistency")
+
+    # ── ML anomaly (Phase 5 — placeholder for future ML integration) ──
+    anom_ml: Mapped[float | None] = mapped_column(Float, nullable=True, doc="Anom_ML ∈ [0,1]")
+
     city: Mapped[str | None] = mapped_column(String(120), nullable=True)
     country: Mapped[str | None] = mapped_column(String(120), nullable=True)
 

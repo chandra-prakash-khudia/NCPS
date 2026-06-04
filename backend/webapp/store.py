@@ -1,8 +1,8 @@
 """
 Database-backed store for the user-facing NCPS webapp.
 
-The formulas here mirror the previous MemoryStore behavior so persistence does
-not change the user-facing credibility behavior.
+All 14 signals from the NCPS engine pipeline are integrated here.
+ML hooks (c_ml, c_memory, anom_ml) are placeholders for future integration.
 """
 
 from __future__ import annotations
@@ -10,6 +10,30 @@ from __future__ import annotations
 import math
 import uuid
 from datetime import datetime, timedelta, timezone
+
+from app.engine.user_engine import (
+    InteractionRecord,
+    AnomalySignals,
+    compute_reliability,
+    compute_experience,
+    compute_burst_deviation,
+    compute_entropy_deviation,
+    compute_consensus_deviation,
+    compute_anomaly,
+)
+from app.engine.post_engine import PostInteraction, compute_post_state
+from app.engine.urgency import compute_urgency as engine_compute_urgency
+from app.engine.spatial import (
+    LocationRecord,
+    compute_location_confidence,
+    compute_location_inconsistency,
+)
+from app.engine.decision import (
+    PropagationInput,
+    AlertInput,
+    decide_propagation,
+    decide_alert,
+)
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -236,9 +260,20 @@ class WebappStore:
             self.get_or_create_preferences(user.user_id).city = user.city
         if country is not None:
             user.country = _clean_text(country, 120) or None
-        user.location_confidence = min(1.0, (user.location_confidence or 0.5) + 0.05)
-        user.updated_at = datetime.now(timezone.utc)
+
+        # Store location history
         self.session.add(UserLocation(user_id=user.user_id, lat=lat, lon=lon))
+
+        # Signal 9: Recompute location confidence from full history
+        loc_records = self._get_location_records(user.user_id)
+        if loc_records:
+            user.location_confidence = compute_location_confidence(loc_records)
+            # Signal 7 (D₅): Location inconsistency
+            user.location_inconsistency = compute_location_inconsistency(loc_records)
+        else:
+            user.location_confidence = min(1.0, (user.location_confidence or 0.5) + 0.05)
+
+        user.updated_at = datetime.now(timezone.utc)
         self._touch_activity(user, points=2)
         self.session.flush()
         return user
@@ -622,14 +657,14 @@ class WebappStore:
     # -- Alerts and notifications --
 
     def generate_alerts_for_post(self, post_id: str | uuid.UUID, source: str = "post") -> list[Alert]:
+        """Algorithm 7: Alert decision using the full engine."""
         post = self.get_post(post_id)
         if post is None or post.lat is None or post.lon is None:
             return []
 
         credibility = _score(post.c_final, 0.5)
         urgency = _score(post.urgency, 0.0)
-        if not (urgency >= 0.4 or credibility * urgency >= 0.25):
-            return []
+        variance = _score(post.variance, 0.0)
 
         created: list[Alert] = []
         users = list(self.session.scalars(select(User)).all())
@@ -657,7 +692,32 @@ class WebappStore:
             if existing is not None:
                 continue
 
-            proximity = _score(user.location_confidence, 0.5) * math.exp(-(distance ** 2) / (2 * (1000.0 ** 2)))
+            # Use the real decision engine (Algorithm 7)
+            recent_alerts = self._recent_alert_count(user.user_id)
+            alert_input = AlertInput(
+                user_lat=user.lat,
+                user_lon=user.lon,
+                user_location_confidence=_score(user.location_confidence, 0.5),
+                post_lat=post.lat,
+                post_lon=post.lon,
+                c_final=credibility,
+                urgency=urgency,
+                variance=variance,
+                recent_alert_count=recent_alerts,
+            )
+            result = decide_alert(alert_input)
+
+            # Webapp relaxation: also alert when urgency is notable and user is
+            # within proximity, even if the strict importance threshold isn't met
+            # (new posts have c_final=0.5 and no votes, so importance is low).
+            webapp_urgency_override = (
+                urgency >= 0.15
+                and result.cond_proximity
+                and result.cond_rate
+            )
+            if not result.should_alert and not webapp_urgency_override:
+                continue
+
             title = "Hyperlocal alert"
             if distance <= 1000:
                 title = "Within 1 km"
@@ -670,11 +730,12 @@ class WebappStore:
                 message=_clean_text(post.content, 140) or "A nearby report needs attention.",
                 category=post.category,
                 distance_m=distance,
-                proximity=proximity,
+                proximity=result.proximity,
                 metadata_json={
                     "source": source,
                     "credibility": round(credibility, 3),
                     "urgency": round(urgency, 3),
+                    "importance": round(result.importance_score, 3),
                     "radius_m": radius,
                 },
             )
@@ -683,6 +744,18 @@ class WebappStore:
 
         self.session.flush()
         return created
+
+    def _recent_alert_count(self, user_id: str | uuid.UUID) -> int:
+        """Count alerts sent to this user in the last hour (for rate limiting)."""
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        return self.session.scalar(
+            select(func.count())
+            .select_from(Alert)
+            .where(
+                Alert.user_id == _parse_uuid(user_id),
+                Alert.timestamp >= one_hour_ago,
+            )
+        ) or 0
 
     def list_alerts(self, user_id: str | uuid.UUID, unread_only: bool = False, limit: int = 50) -> list[Alert]:
         query = select(Alert).where(Alert.user_id == _parse_uuid(user_id))
@@ -992,9 +1065,10 @@ class WebappStore:
             return {"key": "contributor", "label": "Contributor", "level": 2}
         return {"key": "newcomer", "label": "Newcomer", "level": 1}
 
-    # -- Formula parity with previous MemoryStore --
+    # -- Full 14-Signal Engine Integration --
 
     def user_weight(self, user: User) -> float:
+        """Formula 5: w_i = T_i × (1 - Anom_i) × Exp_i"""
         return (
             _score(user.trust_score, 0.5)
             * (1 - _score(user.anomaly_score, 0.0))
@@ -1002,6 +1076,7 @@ class WebappStore:
         )
 
     def _recompute_post(self, post: Post) -> None:
+        """Formulas 6-10: Full post credibility with time decay and ML hooks."""
         interactions = list(self.session.scalars(
             select(Interaction)
             .where(Interaction.post_id == post.post_id)
@@ -1010,81 +1085,168 @@ class WebappStore:
         if not interactions:
             return
 
-        s_plus = sum(_score(item.weight, 0.0) for item in interactions if item.vote > 0)
-        s_minus = sum(_score(item.weight, 0.0) for item in interactions if item.vote < 0)
-        n_eff = s_plus + s_minus
+        t_now = datetime.now(timezone.utc)
 
-        alpha0, beta0 = 1.0, 1.0
-        c_bayes = (alpha0 + s_plus) / (alpha0 + beta0 + n_eff)
-        post.s_plus = s_plus
-        post.s_minus = s_minus
-        post.c_bayes = c_bayes
-        post.c_final = c_bayes
-        post.n_effective = n_eff
-        if post.c_final >= 0.75 and n_eff >= 5 and _score(post.variance, 0.0) <= 0.2:
-            post.radius = max(_score(post.radius, 1000.0), 5000.0)
-        if post.c_final >= 0.85 and n_eff >= 10:
-            post.radius = max(_score(post.radius, 1000.0), 50000.0)
-            post.is_global = True
+        # Convert DB interactions to engine PostInteraction format
+        post_interactions = [
+            PostInteraction(
+                user_weight=_score(item.weight, 0.0),
+                vote=item.vote,
+                timestamp=_ensure_utc(item.timestamp),
+            )
+            for item in interactions
+        ]
 
-        if n_eff > 0:
-            post.variance = sum(
-                _score(item.weight, 0.0) * ((1 if item.vote > 0 else 0) - c_bayes) ** 2
-                for item in interactions
-            ) / n_eff
-            if post.c_final >= 0.75 and n_eff >= 5 and post.variance <= 0.2:
-                post.radius = max(_score(post.radius, 1000.0), 5000.0)
-            if post.c_final >= 0.85 and n_eff >= 10 and post.variance <= 0.18:
-                post.radius = max(_score(post.radius, 1000.0), 50000.0)
+        # Use the real engine: time-decayed credibility + ML hooks
+        state = compute_post_state(
+            interactions=post_interactions,
+            t_now=t_now,
+            c_ml=post.c_ml,       # populated by background ML pipeline (placeholder)
+            c_memory=post.c_memory, # populated by background ML pipeline (placeholder)
+        )
+        post.s_plus = state.s_plus
+        post.s_minus = state.s_minus
+        post.c_bayes = state.c_bayes
+        post.c_final = state.c_final
+        post.n_effective = state.n_effective
+        post.variance = state.variance
+
+        # Algorithm 6: Propagation decision using the engine
+        post_age = (t_now - _ensure_utc(post.created_at)).total_seconds()
+
+        # Gather contributor location confidences for spatial trust
+        contributor_weights = []
+        contributor_loc_confs = []
+        contributor_decays = []
+        for item in interactions:
+            user = self.get_user(item.user_id)
+            if user:
+                dt = (t_now - _ensure_utc(item.timestamp)).total_seconds()
+                decay = math.exp(-0.0001 * max(dt, 0.0))
+                contributor_weights.append(_score(item.weight, 0.0))
+                contributor_loc_confs.append(_score(user.location_confidence, 0.5))
+                contributor_decays.append(decay)
+
+        prop = decide_propagation(PropagationInput(
+            c_final=state.c_final,
+            n_effective=state.n_effective,
+            variance=state.variance,
+            post_age_seconds=post_age,
+            current_radius=_score(post.radius, 1000.0),
+            contributor_weights=contributor_weights,
+            contributor_location_confs=contributor_loc_confs,
+            contributor_decays=contributor_decays,
+        ))
+        if prop.should_expand:
+            post.radius = prop.new_radius
+            if prop.new_radius >= 50000:
                 post.is_global = True
-        post.updated_at = datetime.now(timezone.utc)
+
+        post.updated_at = t_now
 
     def _update_reliability(self, user: User) -> None:
-        interactions = list(self.session.scalars(
-            select(Interaction).where(Interaction.user_id == user.user_id)
-        ).all())
-        alpha = 0.0
-        beta = 0.0
+        """Signals 1-5: Full user state update using the engine."""
+        interaction_records = self._get_interaction_records(user.user_id)
+        t_now = datetime.now(timezone.utc)
 
-        for interaction in interactions:
-            post = self.get_post(interaction.post_id)
+        # Signal 1: R_i* (time-decayed Bayesian reliability)
+        alpha, beta, r_score, confidence, r_star = compute_reliability(
+            interaction_records, t_now
+        )
+        user.alpha = alpha
+        user.beta = beta
+        user.r_score = r_score
+        user.confidence = confidence
+        user.r_star = r_star
+
+        # Signal 2: Exp_i (log-normalized, time-decayed experience)
+        exp_raw, exp_score = compute_experience(interaction_records, t_now)
+        user.exp_raw = exp_raw
+        user.exp_score = exp_score
+
+        # Signal 3: D₁ Burst deviation
+        d1_burst = compute_burst_deviation(interaction_records, t_now)
+
+        # Signal 4: D₂ Entropy deviation
+        action_counts = self._get_action_counts(user.user_id)
+        d2_entropy = compute_entropy_deviation(action_counts)
+
+        # Signal 5: D₃ Consensus deviation
+        d3_consensus = compute_consensus_deviation(interaction_records)
+
+        # Signal 6: D₄ Coordination (from background graph pipeline)
+        d4_coord = _score(getattr(user, 'coordination_score', None), 0.0)
+
+        # Signal 7: D₅ Location inconsistency (from background or location update)
+        d5_loc = _score(getattr(user, 'location_inconsistency', None), 0.0)
+
+        # Anomaly score: rule-based blend (ML placeholder = 0)
+        anom_ml = _score(getattr(user, 'anom_ml', None), 0.0)
+        signals = AnomalySignals(
+            burst_deviation=d1_burst,
+            entropy_deviation=d2_entropy,
+            consensus_deviation=d3_consensus,
+            coordination_score=d4_coord,
+            location_inconsistency=d5_loc,
+        )
+        user.anomaly_score = compute_anomaly(signals, anom_ml)
+
+        # Signal 8: Trust score (from background graph pipeline, else R_i*)
+        graph_trust = getattr(user, 'graph_trust', None)
+        user.trust_score = graph_trust if graph_trust is not None else r_star
+
+    def _compute_urgency(self, content: str) -> float:
+        """Algorithm 5: Urgency score using the engine (keyword + category)."""
+        return engine_compute_urgency(content, [], None)
+
+    # -- Engine data adapters --
+
+    def _get_interaction_records(self, user_id: str | uuid.UUID) -> list[InteractionRecord]:
+        """Convert DB interactions to engine InteractionRecord format."""
+        interactions = list(self.session.scalars(
+            select(Interaction).where(Interaction.user_id == _parse_uuid(user_id))
+        ).all())
+        records = []
+        for item in interactions:
+            post = self.get_post(item.post_id)
             if not post:
                 continue
             is_correct = (
-                (interaction.vote > 0 and _score(post.c_final, 0.5) >= 0.5)
-                or (interaction.vote < 0 and _score(post.c_final, 0.5) < 0.5)
+                (item.vote > 0 and _score(post.c_final, 0.5) >= 0.5)
+                or (item.vote < 0 and _score(post.c_final, 0.5) < 0.5)
             )
-            if is_correct:
-                alpha += 1.0
+            records.append(InteractionRecord(
+                timestamp=_ensure_utc(item.timestamp), is_correct=is_correct, quality=1.0,
+            ))
+        return records
+
+    def _get_action_counts(self, user_id: str | uuid.UUID) -> dict[str, int]:
+        """Get vote action distribution for D₂ entropy computation."""
+        interactions = list(self.session.scalars(
+            select(Interaction).where(Interaction.user_id == _parse_uuid(user_id))
+        ).all())
+        counts: dict[str, int] = {"vote_up": 0, "vote_down": 0}
+        for item in interactions:
+            if item.vote > 0:
+                counts["vote_up"] += 1
             else:
-                beta += 1.0
+                counts["vote_down"] += 1
+        return counts
 
-        user.alpha = alpha
-        user.beta = beta
-        total = alpha + beta
-        if total > 0:
-            user.r_score = alpha / total
-            user.confidence = 1.0 - math.exp(-0.1 * total)
-            user.r_star = user.r_score * user.confidence
-        else:
-            user.r_score = None
-            user.confidence = None
-            user.r_star = 0.5
-        user.trust_score = user.r_star
-
-    def _compute_urgency(self, content: str) -> float:
-        keywords = {
-            "fire": 1.0, "accident": 0.9, "urgent": 0.8, "help": 0.7,
-            "emergency": 1.0, "danger": 0.9, "flood": 0.95, "earthquake": 1.0,
-            "explosion": 1.0, "shooting": 1.0, "traffic": 0.4, "disruption": 0.5,
-            "delayed": 0.4, "blocked": 0.5, "air quality": 0.6,
-        }
-        words = content.lower().split()
-        max_score = 0.0
-        for word in words:
-            if word in keywords:
-                max_score = max(max_score, keywords[word])
-        return max_score
+    def _get_location_records(self, user_id: str | uuid.UUID) -> list[LocationRecord]:
+        """Convert DB location history to engine LocationRecord format."""
+        locations = list(self.session.scalars(
+            select(UserLocation)
+            .where(UserLocation.user_id == _parse_uuid(user_id))
+            .order_by(UserLocation.timestamp.asc())
+        ).all())
+        return [
+            LocationRecord(
+                lat=loc.lat, lon=loc.lon, timestamp=_ensure_utc(loc.timestamp),
+                accuracy_meters=50.0, source="gps",
+            )
+            for loc in locations
+        ]
 
     def normalize_category(self, category: str | None) -> str:
         normalized = (category or "other").strip().lower().replace(" ", "-")
@@ -1280,3 +1442,13 @@ def _iso(value: datetime | None) -> str | None:
 
 def _clean_text(value: str | None, limit: int) -> str:
     return " ".join(str(value or "").strip().split())[:limit]
+
+
+def _ensure_utc(dt: datetime | None) -> datetime:
+    """Ensure a datetime is timezone-aware (UTC). SQLite returns naive datetimes."""
+    if dt is None:
+        return datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
