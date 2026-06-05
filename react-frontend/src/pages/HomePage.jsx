@@ -18,6 +18,7 @@ import PageHeader from '../components/PageHeader';
 import { fetchFeed, updateLocation, getNotificationConfig, savePushSubscription } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { categoryOptions } from '../utils/helpers';
+import { NCPS_FULL_NAME, NCPS_NAME } from '../constants/branding';
 
 const radiusOptions = [1, 5, 10, 25, 50];
 const sortOptions = [
@@ -175,7 +176,7 @@ const HomePage = () => {
       <PageHeader
         eyebrow={greeting + (user?.name ? `, ${user.name.split(' ')[0]}` : '')}
         title="Your credibility feed"
-        subtitle="Community-verified local reports, ranked by credibility, proximity and urgency — not by engagement."
+        subtitle={`${NCPS_NAME} — ${NCPS_FULL_NAME}. Community-verified local reports, ranked by credibility, proximity and urgency — not by engagement.`}
         actions={
           <Button component="a" href="/map" variant="outlined" startIcon={<MapRoundedIcon />} size="small">
             Map

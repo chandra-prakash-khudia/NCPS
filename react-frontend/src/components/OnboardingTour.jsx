@@ -9,12 +9,13 @@ import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import HowToVoteRoundedIcon from '@mui/icons-material/HowToVoteRounded';
 import { getPrefs, savePrefs } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { NCPS_FULL_NAME, NCPS_NAME } from '../constants/branding';
 
 const steps = [
   {
     Icon: ShieldRoundedIcon,
-    title: 'Welcome to NCPS',
-    body: 'A trust-aware feed for local news. Every report carries a live credibility score computed from community votes, contributor reliability, and network signals — not raw engagement.',
+    title: `Welcome to ${NCPS_NAME}`,
+    body: `${NCPS_FULL_NAME} — a trust-aware feed for local news. Every report carries a live credibility score computed from community votes, contributor reliability, and network signals — not raw engagement.`,
   },
   {
     Icon: NearMeRoundedIcon,

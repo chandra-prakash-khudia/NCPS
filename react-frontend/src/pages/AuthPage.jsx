@@ -27,6 +27,7 @@ import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import { NCPS_FULL_NAME, NCPS_NAME } from '../constants/branding';
 
 const valueProps = [
   { Icon: ShieldRoundedIcon, title: 'Credibility, not clicks', body: 'Every report carries a live trust score from weighted community votes.' },
@@ -176,8 +177,8 @@ const AuthPage = ({ mode = 'login' }) => {
             <ShieldRoundedIcon />
           </Box>
           <Box>
-            <Typography sx={{ fontWeight: 800, letterSpacing: '-0.02em', fontSize: '1.2rem' }}>NCPS</Typography>
-            <Typography variant="caption" sx={{ opacity: 0.85 }}>Network Credibility & Propagation System</Typography>
+            <Typography sx={{ fontWeight: 800, letterSpacing: '-0.02em', fontSize: '1.2rem' }}>{NCPS_NAME}</Typography>
+            <Typography variant="caption" sx={{ opacity: 0.85 }}>{NCPS_FULL_NAME}</Typography>
           </Box>
         </Stack>
 
@@ -210,7 +211,35 @@ const AuthPage = ({ mode = 'login' }) => {
 
       {/* Form panel */}
       <Box sx={{ display: 'grid', placeItems: 'center', px: { xs: 2.5, sm: 5 }, py: 5 }}>
-        <Card className="glass-surface" sx={{ width: 'min(100%, 420px)', p: { xs: 2.5, sm: 3.5 } }}>
+        <Stack spacing={2.5} sx={{ width: 'min(100%, 420px)' }}>
+          <Stack
+            direction="row"
+            spacing={1.25}
+            alignItems="center"
+            sx={{ display: { xs: 'flex', md: 'none' }, justifyContent: 'center', textAlign: 'left' }}
+          >
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '11px',
+                display: 'grid',
+                placeItems: 'center',
+                color: '#fff',
+                backgroundImage: `linear-gradient(150deg, ${theme.palette.primary.light}, ${theme.palette.primary.dark})`,
+              }}
+            >
+              <ShieldRoundedIcon sx={{ fontSize: 22 }} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{NCPS_NAME}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, display: 'block' }}>
+                {NCPS_FULL_NAME}
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Card className="glass-surface" sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           <Stack spacing={2.5}>
             <Box>
               <Typography variant="h4" sx={{ fontSize: { xs: '1.6rem', sm: '1.8rem' }, mb: 0.75 }}>
@@ -219,7 +248,7 @@ const AuthPage = ({ mode = 'login' }) => {
               <Typography color="text.secondary" variant="body2">
                 {isRegister
                   ? 'Start reporting and voting on local credibility in minutes.'
-                  : 'Sign in to your NCPS trust profile to continue.'}
+                  : `Sign in to your ${NCPS_NAME} trust profile to continue.`}
               </Typography>
             </Box>
 
@@ -288,13 +317,14 @@ const AuthPage = ({ mode = 'login' }) => {
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-              {isRegister ? 'Already have an account?' : 'New to NCPS?'}{' '}
+              {isRegister ? 'Already have an account?' : `New to ${NCPS_NAME}?`}{' '}
               <Box component={RouterLink} to={isRegister ? '/login' : '/register'} sx={{ color: 'primary.main', fontWeight: 700 }}>
                 {isRegister ? 'Sign in' : 'Create one'}
               </Box>
             </Typography>
           </Stack>
         </Card>
+        </Stack>
       </Box>
     </Box>
   );

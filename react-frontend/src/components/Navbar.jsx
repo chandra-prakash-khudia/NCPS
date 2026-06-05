@@ -24,6 +24,7 @@ import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRound
 import { useColorMode } from '../theme/AppThemeProvider';
 import { useAuth } from '../context/AuthContext';
 import { openCommandPalette } from '../utils/commandBus';
+import { NCPS_FULL_NAME, NCPS_NAME } from '../constants/branding';
 
 const SIDEBAR_WIDTH = 256;
 
@@ -111,10 +112,15 @@ const Navbar = () => {
       </Box>
       <Box sx={{ minWidth: 0 }}>
         <Typography sx={{ fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.02em', fontSize: '1.06rem' }}>
-          NCPS
+          {NCPS_NAME}
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1, display: 'block', fontSize: '0.68rem' }}>
-          Credibility network
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          title={NCPS_FULL_NAME}
+          sx={{ lineHeight: 1.2, display: 'block', fontSize: '0.62rem' }}
+        >
+          {NCPS_FULL_NAME}
         </Typography>
       </Box>
     </Stack>
@@ -139,7 +145,7 @@ const Navbar = () => {
     >
       <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
         <SearchRoundedIcon sx={{ fontSize: 18 }} />
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>Search NCPS</Typography>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>Search {NCPS_NAME}</Typography>
       </Stack>
       <Box
         component="kbd"
