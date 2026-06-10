@@ -5,8 +5,12 @@ No magic numbers anywhere else in the codebase.
 Source of truth: docs/context/mathematical_formula.md, pseudo_algorithm.md
 """
 
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
 
 class NCPSConfig(BaseSettings):
@@ -286,6 +290,36 @@ class NCPSConfig(BaseSettings):
         description="Temperature for ML credibility calibration. "
         ">1 softens predictions toward 0.5, preventing overconfident ML. "
         "1.5 is conservative for potentially miscalibrated models.",
+    )
+
+    # ──────────────────────────────────────────────
+    # Hugging Face Inference API (C_ML via RoBERTa)
+    # Model: jy46604790/Fake-News-Bert-Detect
+    # Set NCPS_HF_API_TOKEN in .env or Render dashboard.
+    # ──────────────────────────────────────────────
+    hf_api_token: str = Field(
+        default="",
+        description="Hugging Face Inference API token. "
+        "Set to enable RoBERTa-based fake news detection (C_ML). "
+        "Leave empty to fall back to C_Bayes only.",
+    )
+    hf_cml_enabled: bool = Field(
+        default=True,
+        description="Enable Hugging Face C_ML predictions. "
+        "Requires hf_api_token to be set.",
+    )
+
+    # ──────────────────────────────────────────────
+    # Local sklearn models (trained via scripts/train_ml_models.py)
+    # ──────────────────────────────────────────────
+    local_ml_enabled: bool = Field(
+        default=True,
+        description="Load and use locally trained C_ML and Anom_ML from ml_models_dir. "
+        "Local C_ML takes priority over Hugging Face when both are available.",
+    )
+    ml_models_dir: str = Field(
+        default_factory=lambda: str(_BACKEND_ROOT / "models" / "trained"),
+        description="Directory containing c_ml.joblib and anom_ml.joblib.",
     )
 
     # ──────────────────────────────────────────────

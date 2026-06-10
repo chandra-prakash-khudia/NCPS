@@ -18,7 +18,9 @@ import math
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
+import joblib
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -148,6 +150,24 @@ class CredibilityMLModel:
         c_ml = 1.0 / (1.0 + math.exp(-scaled_logit))
 
         return min(max(c_ml, 0.0), 1.0)
+
+    @property
+    def is_trained(self) -> bool:
+        return self._trained
+
+    def save(self, path: str | Path) -> None:
+        if not self._trained or self._model is None or self._scaler is None:
+            raise ValueError("Cannot save untrained C_ML model")
+        joblib.dump({"scaler": self._scaler, "model": self._model}, Path(path))
+
+    @classmethod
+    def load(cls, path: str | Path) -> CredibilityMLModel:
+        data = joblib.load(Path(path))
+        inst = cls()
+        inst._scaler = data["scaler"]
+        inst._model = data["model"]
+        inst._trained = True
+        return inst
 
     def _features_to_matrix(self, features_list: list[PostFeatures]) -> np.ndarray:
         """Convert PostFeatures list to numpy matrix."""
@@ -327,6 +347,24 @@ class AnomalyMLModel:
         prob = self._model.predict_proba(X_scaled)[0]
         # prob[1] = P(is_adversarial)
         return float(prob[1])
+
+    @property
+    def is_trained(self) -> bool:
+        return self._trained
+
+    def save(self, path: str | Path) -> None:
+        if not self._trained or self._model is None or self._scaler is None:
+            raise ValueError("Cannot save untrained Anom_ML model")
+        joblib.dump({"scaler": self._scaler, "model": self._model}, Path(path))
+
+    @classmethod
+    def load(cls, path: str | Path) -> AnomalyMLModel:
+        data = joblib.load(Path(path))
+        inst = cls()
+        inst._scaler = data["scaler"]
+        inst._model = data["model"]
+        inst._trained = True
+        return inst
 
     def _features_to_matrix(
         self, features_list: list[UserBehaviorFeatures],

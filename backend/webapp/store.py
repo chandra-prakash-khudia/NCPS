@@ -2,7 +2,7 @@
 Database-backed store for the user-facing NCPS webapp.
 
 All 14 signals from the NCPS engine pipeline are integrated here.
-ML hooks (c_ml, c_memory, anom_ml) are placeholders for future integration.
+C_ML and Anom_ML use locally trained sklearn models when available (see ml_model_store).
 """
 
 from __future__ import annotations
@@ -34,6 +34,10 @@ from app.engine.decision import (
     decide_propagation,
     decide_alert,
 )
+
+from app.engine.hf_credibility import predict_credibility
+from app.engine.ml_model_store import predict_c_ml_local
+from app.config import config as ncps_config
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -291,6 +295,23 @@ class WebappStore:
         source_url: str | None = None,
     ) -> Post:
         user = self.get_or_create_user(user_id)
+
+        # C_ML: local sklearn model (ISOT-trained) → HF RoBERTa → none
+        c_ml: float | None = None
+        if ncps_config.local_ml_enabled:
+            c_ml = predict_c_ml_local(content)
+        if c_ml is None and ncps_config.hf_cml_enabled and ncps_config.hf_api_token:
+            c_ml = predict_credibility(content)
+
+        # Blend into initial c_final using configured weights
+        # C_final = (1 - α_ml) * C_Bayes + α_ml * C_ML
+        # (c_memory = None at creation, so γ_mem is not applied yet)
+        alpha_ml = ncps_config.credibility_alpha_ml  # default 0.15
+        if c_ml is not None:
+            initial_c_final = (1.0 - alpha_ml) * 0.5 + alpha_ml * c_ml
+        else:
+            initial_c_final = 0.5
+
         post = Post(
             user_id=user.user_id,
             content=content,
@@ -298,7 +319,8 @@ class WebappStore:
             image_url=image_url,
             source_url=source_url,
             c_bayes=0.5,
-            c_final=0.5,
+            c_ml=c_ml,
+            c_final=initial_c_final,
             variance=0.0,
             n_effective=0.0,
             s_plus=0.0,
@@ -1180,8 +1202,8 @@ class WebappStore:
         # Signal 7: D₅ Location inconsistency (from background or location update)
         d5_loc = _score(getattr(user, 'location_inconsistency', None), 0.0)
 
-        # Anomaly score: rule-based blend (ML placeholder = 0)
-        anom_ml = _score(getattr(user, 'anom_ml', None), 0.0)
+        # Anomaly score: rule-based blend + Anom_ML (set by background pipeline)
+        anom_ml = _score(getattr(user, "anom_ml", None), 0.0)
         signals = AnomalySignals(
             burst_deviation=d1_burst,
             entropy_deviation=d2_entropy,

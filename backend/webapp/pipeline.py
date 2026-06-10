@@ -17,13 +17,18 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.engine.graph_engine import GraphState, VoteRecord, run_graph_pipeline
+from app.engine.hf_credibility import predict_credibility
+from app.engine.ml_engine import MemoryEngine, MemoryEntry
+from app.engine.ml_model_store import predict_anom_ml_local, predict_c_ml_local
 from app.engine.signal_engine import ExtendedSignals, compute_all_extended_signals
 from app.engine.spatial import (
     LocationRecord,
     compute_location_confidence,
     compute_location_inconsistency,
 )
+from app.config import config as ncps_config
 from app.models.interaction import Interaction, UserLocation
+from app.models.post import Post
 from app.models.user import User
 from webapp.models import UserRequestMetadata
 
@@ -77,7 +82,9 @@ class BackgroundPipeline:
             self._run_graph(session)
             self._run_spatial(session)
             self._run_extended_signals(session)
-            self._run_ml_placeholder(session)
+            self._run_anom_ml_scoring(session)
+            self._run_cml_backfill(session)
+            self._run_memory_engine(session)
             session.commit()
         except Exception:
             session.rollback()
@@ -230,10 +237,158 @@ class BackgroundPipeline:
         except Exception:
             logger.exception("Extended signals sub-pipeline failed")
 
-    # ── ML hooks (placeholder) ──
+    # ── Anom_ML (trained sklearn model) ──
 
-    def _run_ml_placeholder(self, session: Session) -> None:
+    def _run_anom_ml_scoring(self, session: Session) -> None:
+        if not ncps_config.local_ml_enabled:
+            return
         try:
-            logger.info("ML pipeline: placeholder — plug in trained models here")
+            users = session.query(User).all()
+            scored = 0
+            for user in users:
+                ext = self.user_signals.get(str(user.user_id))
+                anom = predict_anom_ml_local(session, user, ext)
+                if anom is None:
+                    continue
+                user.anom_ml = anom
+                scored += 1
+            if scored:
+                logger.info("Anom_ML pipeline: scored %d users", scored)
         except Exception:
-            logger.exception("ML sub-pipeline failed")
+            logger.exception("Anom_ML sub-pipeline failed")
+
+    # ── C_ML backfill (local sklearn → HF RoBERTa fallback) ──
+
+    def _run_cml_backfill(self, session: Session) -> None:
+        """
+        Backfill c_ml for posts missing scores at creation time.
+        Local model first; HF API only when local unavailable and token set.
+        """
+        use_local = ncps_config.local_ml_enabled
+        use_hf = ncps_config.hf_cml_enabled and bool(ncps_config.hf_api_token)
+        if not use_local and not use_hf:
+            return
+
+        try:
+            posts_to_score = (
+                session.query(Post)
+                .filter(Post.c_ml.is_(None))
+                .order_by(Post.created_at)
+                .limit(20)
+                .all()
+            )
+            if not posts_to_score:
+                return
+
+            alpha_ml = ncps_config.credibility_alpha_ml
+            scored = 0
+            for post in posts_to_score:
+                c_ml = predict_c_ml_local(post.content) if use_local else None
+                if c_ml is None and use_hf:
+                    c_ml = predict_credibility(post.content)
+                if c_ml is None:
+                    break
+                post.c_ml = c_ml
+                c_bayes = post.c_bayes if post.c_bayes is not None else 0.5
+                post.c_final = (1.0 - alpha_ml) * c_bayes + alpha_ml * c_ml
+                scored += 1
+
+            if scored:
+                logger.info("C_ML backfill: scored %d/%d posts", scored, len(posts_to_score))
+        except Exception:
+            logger.exception("C_ML backfill sub-pipeline failed")
+
+    # ── C_memory via TF-IDF cosine similarity (MemoryEngine) ──
+
+    def _run_memory_engine(self, session: Session) -> None:
+        """
+        Builds a TF-IDF memory bank from resolved posts (n_effective >= 3)
+        and scores posts with NULL c_memory using cosine similarity.
+
+        This mirrors exactly what the simulation does:
+          C_memory(j) = Σ Sim(j,k) × C_k / Σ Sim(j,k)
+
+        where Sim = TF-IDF cosine similarity between post j and past post k.
+
+        Posts with settled credibility (n_effective >= 3) become the memory bank.
+        New/unscored posts (c_memory IS NULL) are queried against this bank.
+        """
+        try:
+            # ── Step 1: Build memory bank from resolved posts ──
+            # Use posts with at least 3 effective votes as "resolved"
+            resolved_posts = (
+                session.query(Post)
+                .filter(
+                    Post.n_effective >= 3.0,
+                    Post.c_final.isnot(None),
+                    Post.content.isnot(None),
+                )
+                .order_by(Post.created_at)
+                .all()
+            )
+
+            if len(resolved_posts) < 3:
+                logger.debug(
+                    "Memory engine skipped: only %d resolved posts (need >= 3)",
+                    len(resolved_posts),
+                )
+                return
+
+            memory_entries = [
+                MemoryEntry(
+                    post_id=str(p.post_id),
+                    content=p.content,
+                    credibility=p.c_final if p.c_final is not None else 0.5,
+                )
+                for p in resolved_posts
+            ]
+
+            engine = MemoryEngine()
+            engine.build_memory(memory_entries)
+            logger.info(
+                "Memory engine: built TF-IDF index from %d resolved posts",
+                len(memory_entries),
+            )
+
+            # ── Step 2: Score posts with c_memory IS NULL ──
+            unscored_posts = (
+                session.query(Post)
+                .filter(Post.c_memory.is_(None), Post.content.isnot(None))
+                .order_by(Post.created_at)
+                .limit(50)  # cap per cycle
+                .all()
+            )
+
+            if not unscored_posts:
+                logger.debug("Memory engine: no posts to score")
+                return
+
+            alpha_ml = ncps_config.credibility_alpha_ml      # 0.15
+            gamma_mem = ncps_config.credibility_gamma_memory  # 0.10
+            base_weight = 1.0 - alpha_ml - gamma_mem          # 0.75
+
+            scored = 0
+            for post in unscored_posts:
+                c_memory = engine.query(post.content)
+                if c_memory is None:
+                    continue  # no similarity found — skip, retry next cycle
+
+                post.c_memory = c_memory
+
+                # Recompute c_final = 0.75 * C_Bayes + 0.15 * C_ML + 0.10 * C_memory
+                c_bayes = post.c_bayes if post.c_bayes is not None else 0.5
+                c_ml = post.c_ml if post.c_ml is not None else c_bayes
+                post.c_final = (
+                    base_weight * c_bayes
+                    + alpha_ml * c_ml
+                    + gamma_mem * c_memory
+                )
+                scored += 1
+
+            logger.info(
+                "Memory engine: scored %d/%d posts with C_memory",
+                scored,
+                len(unscored_posts),
+            )
+        except Exception:
+            logger.exception("Memory engine sub-pipeline failed")

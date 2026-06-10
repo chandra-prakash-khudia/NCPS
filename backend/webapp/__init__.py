@@ -63,6 +63,16 @@ async def lifespan(app: FastAPI):
     global _pipeline
     init_webapp_database()
 
+    from app.engine.ml_model_store import load_trained_models
+
+    if load_trained_models():
+        logger.info("Local ML models loaded (C_ML / Anom_ML)")
+    else:
+        logger.warning(
+            "Local ML models not loaded — run: cd backend && "
+            "PYTHONPATH=. python scripts/train_ml_models.py"
+        )
+
     # Start background signal pipeline (graph trust, spatial, extended signals)
     _pipeline = BackgroundPipeline(get_session_factory(), interval_seconds=60)
     _pipeline.start()

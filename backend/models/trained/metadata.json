@@ -1,0 +1,25 @@
+{
+  "trained_at": "2026-06-10T06:02:07.627005+00:00",
+  "finished_at": "2026-06-10T06:03:00.901960+00:00",
+  "num_users": 2000,
+  "user_mix": {
+    "num_honest": 1143,
+    "num_noisy": 143,
+    "num_adversarial": 143,
+    "num_bots": 571,
+    "bot_groups": 114
+  },
+  "num_posts": 44898,
+  "post_source": "isot",
+  "interactions": 449000,
+  "train_val_ratio": 0.7,
+  "train_posts": 31427,
+  "train_users": 1399,
+  "c_ml_samples": 31427,
+  "anom_ml_samples": 1399,
+  "c_ml_trained": true,
+  "anom_ml_trained": true,
+  "seed": 42,
+  "time_steps": 4490,
+  "interactions_per_step": 100
+}

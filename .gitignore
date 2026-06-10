@@ -1,5 +1,8 @@
 plan.md
 
+# Large ISOT dataset CSVs (download locally)
+backend/data/isot_fake_news/*.csv
+
 # Python
 backend/venv/
 __pycache__/
