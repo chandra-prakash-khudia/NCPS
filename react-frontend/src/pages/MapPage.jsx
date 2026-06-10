@@ -61,9 +61,7 @@ const MapPage = () => {
         setPosts(res.data.posts || []);
       } catch {}
 
-      setLoading(false);
-
-      // Init map
+      // Init map before removing the spinner so the container has a valid size
       if (mapRef.current && !mapInstanceRef.current) {
         const L = window.L;
         const map = L.map(mapRef.current).setView([lat, lon], 13);
@@ -81,6 +79,13 @@ const MapPage = () => {
           .addTo(map)
           .bindPopup('<strong>Your Location</strong>');
       }
+
+      setLoading(false);
+
+      // After React removes the spinner overlay, recalculate tile layout
+      setTimeout(() => {
+        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+      }, 50);
     };
 
     init();

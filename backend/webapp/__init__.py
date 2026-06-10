@@ -7,6 +7,7 @@ and migrations must be applied before serving production traffic.
 
 from __future__ import annotations
 
+import io
 import os
 import re
 import sys
@@ -529,6 +530,18 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
+_CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "")
+if _CLOUDINARY_URL:
+    try:
+        import cloudinary
+        import cloudinary.uploader
+        cloudinary.config(cloudinary_url=_CLOUDINARY_URL)
+        _cloudinary_ready = True
+    except ImportError:
+        _cloudinary_ready = False
+else:
+    _cloudinary_ready = False
+
 
 @app.post("/api/post/upload-image")
 async def upload_post_image(
@@ -542,6 +555,17 @@ async def upload_post_image(
     data = await file.read()
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=400, detail="Image must be 5 MB or smaller.")
+
+    if _cloudinary_ready:
+        import cloudinary.uploader
+        result = cloudinary.uploader.upload(
+            io.BytesIO(data),
+            folder="ncps/posts",
+            resource_type="image",
+        )
+        return {"image_url": result["secure_url"]}
+
+    # Local fallback for dev (no CLOUDINARY_URL set)
     ext = {
         "image/jpeg": ".jpg",
         "image/png": ".png",
