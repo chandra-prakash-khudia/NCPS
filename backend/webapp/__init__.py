@@ -7,7 +7,6 @@ and migrations must be applied before serving production traffic.
 
 from __future__ import annotations
 
-import io
 import os
 import re
 import sys
@@ -25,8 +24,6 @@ from dotenv import load_dotenv
 _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(_backend_dir, ".env"))
 
-from pathlib import Path
-
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
@@ -36,6 +33,16 @@ from sqlalchemy.orm import Session
 
 from webapp.db import dispose_webapp_database, get_database_kind, get_db, get_session_factory, init_webapp_database
 from webapp.models import AuthAccount
+from webapp.media_storage import (
+    MediaStorageUnavailableError,
+    MediaStorageValidationError,
+    image_storage_status,
+    is_post_image_url_allowed,
+    local_upload_filename_from_url,
+    local_upload_media_type,
+    local_upload_path,
+    upload_post_image as store_post_image,
+)
 from webapp.security import (
     AuthError,
     TOKEN_TTL_SECONDS,
@@ -405,7 +412,14 @@ def profile_page():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "mode": "database", "database": get_database_kind(), "version": "1.0.0"}
+    storage = image_storage_status()
+    return {
+        "status": "ok" if storage["ready"] else "degraded",
+        "mode": "database",
+        "database": get_database_kind(),
+        "image_storage": storage,
+        "version": "1.0.0",
+    }
 
 
 @app.post("/api/auth/register")
@@ -525,73 +539,30 @@ def observability_metrics(account: AuthAccount = Depends(get_current_account)):
     }
 
 
-UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
-
-_CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "")
-if _CLOUDINARY_URL:
-    try:
-        import cloudinary
-        import cloudinary.uploader
-        cloudinary.config(cloudinary_url=_CLOUDINARY_URL)
-        _cloudinary_ready = True
-    except ImportError:
-        _cloudinary_ready = False
-else:
-    _cloudinary_ready = False
-
-
 @app.post("/api/post/upload-image")
 async def upload_post_image(
     file: UploadFile = File(...),
     account: AuthAccount = Depends(get_current_account),
 ):
     del account  # auth gate only
-    content_type = (file.content_type or "").lower()
-    if content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=400, detail="Image must be JPEG, PNG, WebP, or GIF.")
     data = await file.read()
-    if len(data) > MAX_IMAGE_BYTES:
-        raise HTTPException(status_code=400, detail="Image must be 5 MB or smaller.")
-
-    if _cloudinary_ready:
-        import cloudinary.uploader
-        result = cloudinary.uploader.upload(
-            io.BytesIO(data),
-            folder="ncps/posts",
-            resource_type="image",
-        )
-        return {"image_url": result["secure_url"]}
-
-    # Local fallback for dev (no CLOUDINARY_URL set)
-    ext = {
-        "image/jpeg": ".jpg",
-        "image/png": ".png",
-        "image/webp": ".webp",
-        "image/gif": ".gif",
-    }[content_type]
-    filename = f"{uuid.uuid4().hex}{ext}"
-    path = UPLOAD_DIR / filename
-    path.write_bytes(data)
-    return {"image_url": f"/api/uploads/{filename}"}
+    try:
+        image_url = store_post_image(data, file.content_type or "")
+    except MediaStorageValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except MediaStorageUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"image_url": image_url}
 
 
 @app.get("/api/uploads/{filename}")
 def get_uploaded_image(filename: str):
-    if not re.fullmatch(r"[a-f0-9]{32}\.(jpg|png|webp|gif)", filename):
+    if local_upload_filename_from_url(f"/api/uploads/{filename}") is None:
         raise HTTPException(status_code=404, detail="Not found")
-    path = UPLOAD_DIR / filename
+    path = local_upload_path(filename)
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Not found")
-    media_type = {
-        ".jpg": "image/jpeg",
-        ".png": "image/png",
-        ".webp": "image/webp",
-        ".gif": "image/gif",
-    }[path.suffix]
-    return FileResponse(path, media_type=media_type)
+    return FileResponse(path, media_type=local_upload_media_type(filename))
 
 
 @app.post("/api/post/create")
@@ -600,6 +571,11 @@ def create_post(
     account: AuthAccount = Depends(get_current_account),
     store: WebappStore = Depends(get_store),
 ):
+    if not is_post_image_url_allowed(req.image_url):
+        raise HTTPException(
+            status_code=400,
+            detail="Local upload image URLs are disabled in Cloudinary image storage mode.",
+        )
     post = store.create_post(
         str(account.user_id),
         req.content,

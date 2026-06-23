@@ -1,0 +1,50 @@
+ISOT User-Scale Comparison — Phase 6 Full Pipeline
+Posts: 44898 | Votes/run: 449,000 (~10/post)
+Started: 2026-06-08T16:44:05.673793+00:00
+
+======================================================================
+70 users: 40 honest, 5 noisy, 5 adversarial, 20 bots (4 groups) = 70 total
+
+============================================================
+Running: Phase 6: 70 users
+  Active: Graph + Spatial + ML + Signals
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 449000
+  Signals: 20 low-device, 20 low-IP users
+  Results: Acc=0.946 | Attack=0.061 | Brier=0.205 | WCorr=0.857 | Anom-P=1.000 | Anom-R=1.000
+  >> finished in 11.9 min
+
+======================================================================
+500 users: 286 honest, 36 noisy, 36 adversarial, 142 bots (28 groups) = 500 total
+
+============================================================
+Running: Phase 6: 500 users
+  Active: Graph + Spatial + ML + Signals
+============================================================
+  Users: 500 | Posts: 44898 (isot) | Interactions: 449000
+  Signals: 142 low-device, 142 low-IP users
+  Results: Acc=0.961 | Attack=0.035 | Brier=0.214 | WCorr=0.651 | Anom-P=0.994 | Anom-R=0.865
+  >> finished in 12.2 min
+
+======================================================================
+2000 users: 1143 honest, 143 noisy, 143 adversarial, 571 bots (114 groups) = 2000 total
+
+============================================================
+Running: Phase 6: 2000 users
+  Active: Graph + Spatial + ML + Signals
+============================================================
+  Users: 2000 | Posts: 44898 (isot) | Interactions: 449000
+  Signals: 573 low-device, 587 low-IP users
+  Results: Acc=0.966 | Attack=0.029 | Brier=0.216 | WCorr=0.468 | Anom-P=1.000 | Anom-R=0.829
+  >> finished in 12.6 min
+
+==========================================================================================
+USER-SCALE COMPARISON — Phase 6 (Attack, Full ISOT, ~10 votes/post)
+==========================================================================================
+Users         Honest  Noisy   Adv   Bots  Groups     Acc  Attack  Brier  WCorr  Anom-P  Anom-R    Time
+------------------------------------------------------------------------------------------
+70 users          40      5     5     20       4   0.946   0.061  0.205  0.857   1.000   1.000   11.9m
+500 users        286     36    36    142      28   0.961   0.035  0.214  0.651   0.994   0.865   12.2m
+2000 users      1143    143   143    571     114   0.966   0.029  0.216  0.468   1.000   0.829   12.6m
+
+Finished: 2026-06-08T17:20:50.583233+00:00

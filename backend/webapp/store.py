@@ -54,6 +54,7 @@ from webapp.models import (
     UserPreference,
     WebPushSubscription,
 )
+from webapp.media_storage import public_post_image_url
 
 
 class DuplicateVoteError(ValueError):
@@ -536,7 +537,7 @@ class WebappStore:
             "author_user_id": str(post.user_id),
             "author_name": account.name if account else "Community member",
             "content": post.content,
-            "image_url": post.image_url,
+            "image_url": public_post_image_url(post.image_url),
             "source_url": post.source_url,
             "category": post.category,
             "credibility": round(credibility, 3),
@@ -1473,4 +1474,3 @@ def _ensure_utc(dt: datetime | None) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt
-

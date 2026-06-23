@@ -22,7 +22,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from simulation.runner import ExperimentConfig, run_experiment, run_all_experiments
+from simulation.runner import (
+    ExperimentConfig, run_experiment, run_all_experiments,
+    _post_feature, _user_behavior_features,
+)
+from simulation.splits import make_train_val_split
 from simulation.simulator import Simulator, UserType, PostLabel
 from app.engine.user_engine import InteractionRecord, compute_user_state, compute_reliability
 from app.engine.post_engine import PostInteraction, compute_post_state
@@ -58,6 +62,7 @@ if os.path.exists(frontend_dir):
 class SimulationRequest(BaseModel):
     scenario: str = "attack"  # attack, baseline, noisy
     phase: int = 6
+    dataset: str = "synthetic"  # synthetic | isot
 
 
 class CompareRequest(BaseModel):
@@ -109,6 +114,8 @@ async def run_simulation(req: SimulationRequest):
         use_spatial=req.phase >= 4,
         use_ml=req.phase >= 5,
         use_signals=req.phase >= 6,
+        use_real_news=req.dataset == "isot",
+        eval_on_val_only=False,  # dashboard: show full synthetic run metrics
     )
 
     # Run full sim and collect state for dashboard
@@ -143,11 +150,18 @@ def _run_full_state(cfg: ExperimentConfig) -> dict:
         num_adversarial=cfg.num_adversarial, num_bots=cfg.num_bots,
         bot_groups=cfg.bot_groups, num_true_posts=cfg.num_true_posts,
         num_false_posts=cfg.num_false_posts, seed=cfg.seed,
+        use_real_news=cfg.use_real_news, news_data_dir=cfg.news_data_dir,
     )
     interactions = sim.generate_interactions(
         time_steps=cfg.time_steps, interactions_per_step=cfg.interactions_per_step,
     )
     t_now = datetime.now(timezone.utc)
+
+    split = None
+    if cfg.eval_on_val_only:
+        split = make_train_val_split(
+            sim.posts, sim.users, train_ratio=cfg.train_val_ratio, seed=cfg.seed,
+        )
 
     # Build user interaction maps
     user_interactions = {}
@@ -224,74 +238,96 @@ def _run_full_state(cfg: ExperimentConfig) -> dict:
                 "timing": round(signals.timing_irregularity, 3),
             }
 
-    # ML
+    # ML (train on 70% holdout; score validation split only)
     ml_anomaly_scores = {}
     ml_cred_scores = {}
+    ml_memory_scores: dict[str, float | None] = {}
     if cfg.use_ml:
         cred_model = CredibilityMLModel()
+        memory_engine = MemoryEngine()
         anom_model = AnomalyMLModel()
 
-        # Train
-        train_features, train_labels = [], []
-        post_vote_counts = {}
-        post_early_votes = {}
+        post_vote_counts: dict[str, int] = {}
+        post_early_votes: dict[str, list[int]] = {}
         for inter in interactions:
             pid = str(inter.post_id)
             post_vote_counts[pid] = post_vote_counts.get(pid, 0) + 1
             if post_vote_counts[pid] <= 3:
-                if pid not in post_early_votes:
-                    post_early_votes[pid] = []
-                post_early_votes[pid].append(inter.vote)
+                post_early_votes.setdefault(pid, []).append(inter.vote)
 
+        train_post_ids = (
+            set(split.train_post_ids) if split else {str(p.post_id) for p in sim.posts}
+        )
+        val_post_ids = (
+            set(split.val_post_ids) if split else {str(p.post_id) for p in sim.posts}
+        )
+        train_user_ids = (
+            set(split.train_user_ids) if split else {str(u.user_id) for u in sim.users}
+        )
+        val_user_ids = (
+            set(split.val_user_ids) if split else {str(u.user_id) for u in sim.users}
+        )
+
+        train_features, train_labels = [], []
         for post in sim.posts:
             pid = str(post.post_id)
-            if post.label == PostLabel.AMBIGUOUS:
+            if post.label == PostLabel.AMBIGUOUS or pid not in train_post_ids:
                 continue
-            feats = extract_post_features(
-                content=post.content,
-                early_votes=post_early_votes.get(pid),
-                interaction_count=post_vote_counts.get(pid, 0),
-                time_span_seconds=max(cfg.time_steps * 60, 1),
+            train_features.append(
+                _post_feature(post, post_early_votes, post_vote_counts, cfg.time_steps)
             )
-            train_features.append(feats)
             train_labels.append(1 if post.label == PostLabel.TRUE else 0)
         cred_model.train(train_features, train_labels)
 
         for post in sim.posts:
             pid = str(post.post_id)
-            feats = extract_post_features(
-                content=post.content,
-                early_votes=post_early_votes.get(pid),
-                interaction_count=post_vote_counts.get(pid, 0),
-                time_span_seconds=max(cfg.time_steps * 60, 1),
-            )
-            ml_cred_scores[pid] = cred_model.predict(feats)
+            if pid in val_post_ids and post.label != PostLabel.AMBIGUOUS:
+                feats = _post_feature(post, post_early_votes, post_vote_counts, cfg.time_steps)
+                ml_cred_scores[pid] = cred_model.predict(feats)
 
-        # Anomaly
-        total_time = max(cfg.time_steps * 60.0, 1.0)
-        user_feats_list = []
+        memory_entries = []
+        for post in sim.posts:
+            pid = str(post.post_id)
+            if post.label == PostLabel.AMBIGUOUS or pid not in train_post_ids:
+                continue
+            known_cred = 0.9 if post.label == PostLabel.TRUE else 0.1
+            memory_entries.append(MemoryEntry(
+                post_id=pid, content=post.content, credibility=known_cred,
+            ))
+        memory_engine.build_memory(memory_entries)
+        for post in sim.posts:
+            pid = str(post.post_id)
+            if pid in val_post_ids:
+                ml_memory_scores[pid] = memory_engine.query(post.content)
+
+        extended_for_user = {
+            uid: {
+                "nav": v.get("navigation", 0.0),
+                "device": v.get("device", 1.0),
+                "ip": v.get("ip", 1.0),
+                "session": v.get("session", 1.0),
+                "timing": v.get("timing", 1.0),
+            }
+            for uid, v in ext_signals.items()
+        }
+        train_user_feats, train_user_labels = [], []
+        val_user_feats = {}
         for user in sim.users:
             uid = str(user.user_id)
-            ext = ext_signals.get(uid, {}) if cfg.use_signals else {}
-            feats = extract_user_behavior_features(
-                interactions_count=len(user_interactions.get(uid, [])),
-                total_time_seconds=total_time,
-                action_counts=user_action_counts.get(uid, {"vote_up": 0, "vote_down": 0}),
-                consensus_deviation=1.0 - r_star_scores.get(uid, 0.5),
-                coordination_score=coord_scores.get(uid, 0.0),
-                location_inconsistency=location_inconsistencies.get(uid, 0.0),
-                votes=user_votes.get(uid, []),
-                navigation_deviation=ext.get("navigation", 0.0),
-                device_consistency=ext.get("device", 1.0),
-                ip_consistency=ext.get("ip", 1.0),
-                session_continuity=ext.get("session", 1.0),
-                timing_irregularity=ext.get("timing", 1.0),
+            feats = _user_behavior_features(
+                user, cfg, user_interactions, user_action_counts, user_votes,
+                r_star_scores, coord_scores, location_inconsistencies, extended_for_user,
             )
-            user_feats_list.append(feats)
-        user_type_labels = [1 if u.user_type in (UserType.ADVERSARIAL, UserType.BOT) else 0 for u in sim.users]
-        anom_model.train(user_feats_list, user_type_labels)
-        for i, user in enumerate(sim.users):
-            ml_anomaly_scores[str(user.user_id)] = anom_model.predict(user_feats_list[i])
+            if uid in train_user_ids:
+                train_user_feats.append(feats)
+                train_user_labels.append(
+                    1 if user.user_type in (UserType.ADVERSARIAL, UserType.BOT) else 0
+                )
+            elif uid in val_user_ids:
+                val_user_feats[uid] = feats
+        anom_model.train(train_user_feats, train_user_labels)
+        for uid, feats in val_user_feats.items():
+            ml_anomaly_scores[uid] = anom_model.predict(feats)
 
     # Compute user states
     users_out = []
@@ -340,9 +376,10 @@ def _run_full_state(cfg: ExperimentConfig) -> dict:
     for post in sim.posts:
         pid = str(post.post_id)
         c_ml = ml_cred_scores.get(pid) if cfg.use_ml else None
+        c_mem = ml_memory_scores.get(pid) if cfg.use_ml else None
         post_state = compute_post_state(
             interactions=post_interactions_map.get(pid, []),
-            t_now=t_now, c_ml=c_ml,
+            t_now=t_now, c_ml=c_ml, c_memory=c_mem,
         )
         posts_out.append({
             "id": pid[:8],
@@ -365,13 +402,15 @@ def _run_full_state(cfg: ExperimentConfig) -> dict:
         compute_anomaly_detection,
     )
 
-    # Simpler approach for metrics
+    eval_post_ids = (
+        set(split.val_post_ids) if split else {str(p.post_id) for p in sim.posts}
+    )
     cred_list = []
     truth_list = []
     f_creds = []
     for post in sim.posts:
         pid = str(post.post_id)
-        if post.label == PostLabel.AMBIGUOUS:
+        if post.label == PostLabel.AMBIGUOUS or pid not in eval_post_ids:
             continue
         c = next((p["credibility"] for p in posts_out if p["full_id"] == pid), 0.5)
         cred_list.append(c)
@@ -399,6 +438,7 @@ def _run_full_state(cfg: ExperimentConfig) -> dict:
             "phase": 6 if cfg.use_signals else (5 if cfg.use_ml else (4 if cfg.use_spatial else (3 if cfg.use_graph else 1))),
             "num_users": len(sim.users),
             "num_posts": len(sim.posts),
+            "post_source": sim.post_source,
         },
     }
 

@@ -1,0 +1,82 @@
+Started: 2026-06-08T16:03:16.287647+00:00
+Posts: 44898 | Target votes: 449000 (~10.0/post)
+
+
+============================================================
+Running: Phase 1: Attack (Base)
+  Active: Base only
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 449000
+  Results: Acc=0.717 | Attack=0.345 | Brier=0.245 | WCorr=0.739 | Anom-P=0.000 | Anom-R=0.000
+  >> P1 finished in 0.1 min (5s)
+
+============================================================
+Running: Phase 3: Attack (Graph)
+  Active: Graph
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 449000
+  Results: Acc=0.717 | Attack=0.345 | Brier=0.245 | WCorr=0.780 | Anom-P=0.000 | Anom-R=0.000
+  >> P3 finished in 0.2 min (9s)
+
+============================================================
+Running: Phase 4: Attack (Graph+Spatial)
+  Active: Graph + Spatial
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 449000
+  Results: Acc=0.717 | Attack=0.345 | Brier=0.245 | WCorr=0.780 | Anom-P=1.000 | Anom-R=0.040
+  >> P4 finished in 0.2 min (9s)
+
+============================================================
+Running: Phase 5: Attack (Graph+Spatial+ML)
+  Active: Graph + Spatial + ML
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 449000
+  Results: Acc=0.946 | Attack=0.061 | Brier=0.205 | WCorr=0.829 | Anom-P=0.958 | Anom-R=0.920
+  >> P5 finished in 6.8 min (407s)
+
+============================================================
+Running: Phase 6: Attack (Full Pipeline)
+  Active: Graph + Spatial + ML + Signals
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 449000
+  Signals: 20 low-device, 20 low-IP users
+  Results: Acc=0.946 | Attack=0.061 | Brier=0.205 | WCorr=0.859 | Anom-P=1.000 | Anom-R=1.000
+  >> P6 finished in 9.7 min (581s)
+
+============================================================
+Running: Phase 6: Baseline (Honest Only)
+  Active: Graph + Spatial + ML + Signals
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 449000
+  Signals: 0 low-device, 0 low-IP users
+Only one class in training data, skipping Anom_ML
+  Results: Acc=0.940 | Attack=0.066 | Brier=0.181 | WCorr=0.878 | Anom-P=0.000 | Anom-R=0.000
+  >> P6b finished in 12.0 min
+
+===============================================================================================
+FULL ISOT + ~449,000 VOTES (~10/post)
+Posts: 44898 (21417 true + 23481 fake)
+===============================================================================================
+  Metric                       Phase 1   Phase 3   Phase 4   Phase 5   Phase 6
+  ---------------------------------------------------------------------------
+  Accuracy                       0.717     0.717     0.717     0.946     0.946
+  Attack Success ↓               0.345     0.345     0.345     0.061     0.061
+  Brier Score ↓                  0.245     0.245     0.245     0.205     0.205
+  Weight Correlation             0.739     0.780     0.780     0.829     0.859
+  Anomaly Precision              0.000     0.000     1.000     0.958     1.000
+  Anomaly Recall                 0.000     0.000     0.040     0.920     1.000
+
+  Phase 1 → Phase 6 Improvement:
+    Accuracy:        0.717 → 0.946
+    Attack Success:  0.345 → 0.061
+    Anomaly Recall:  0.000 → 1.000
+
+TIMING
+  Phase 1: 0.1 min
+  Phase 3: 0.2 min
+  Phase 4: 0.2 min
+  Phase 5: 6.8 min
+  Phase 6: 9.7 min
+  Baseline: 12.0 min
+  TOTAL: 28.8 min (0.48 hours)
+Finished: 2026-06-08T16:32:07.247786+00:00

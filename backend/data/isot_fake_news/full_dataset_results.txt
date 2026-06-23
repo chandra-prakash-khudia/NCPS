@@ -1,0 +1,63 @@
+Only one class in training data, skipping Anom_ML
+
+============================================================
+Running: Phase 1: Attack (Base)
+  Active: Base only
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 1000
+  Results: Acc=0.478 | Attack=0.997 | Brier=0.250 | WCorr=0.249 | Anom-P=0.000 | Anom-R=0.000
+
+============================================================
+Running: Phase 3: Attack (Graph)
+  Active: Graph
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 1000
+  Results: Acc=0.478 | Attack=0.997 | Brier=0.250 | WCorr=0.235 | Anom-P=0.000 | Anom-R=0.000
+
+============================================================
+Running: Phase 4: Attack (Graph+Spatial)
+  Active: Graph + Spatial
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 1000
+  Results: Acc=0.478 | Attack=0.997 | Brier=0.250 | WCorr=0.235 | Anom-P=0.833 | Anom-R=0.200
+
+============================================================
+Running: Phase 5: Attack (Graph+Spatial+ML)
+  Active: Graph + Spatial + ML
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 1000
+  Results: Acc=0.969 | Attack=0.026 | Brier=0.217 | WCorr=0.256 | Anom-P=0.952 | Anom-R=0.800
+
+============================================================
+Running: Phase 6: Attack (Full Pipeline)
+  Active: Graph + Spatial + ML + Signals
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 1000
+  Signals: 25 low-device, 23 low-IP users
+  Results: Acc=0.969 | Attack=0.026 | Brier=0.217 | WCorr=0.310 | Anom-P=0.955 | Anom-R=0.840
+
+============================================================
+Running: Phase 6: Baseline (Honest Only)
+  Active: Graph + Spatial + ML + Signals
+============================================================
+  Users: 70 | Posts: 44898 (isot) | Interactions: 1000
+  Signals: 6 low-device, 9 low-IP users
+  Results: Acc=0.965 | Attack=0.031 | Brier=0.217 | WCorr=0.273 | Anom-P=0.000 | Anom-R=0.000
+
+===============================================================================================
+FULL ISOT DATASET — Phase 1 → Phase 6
+Posts: 44898 (21417 true + 23481 fake)
+===============================================================================================
+  Metric                       Phase 1   Phase 3   Phase 4   Phase 5   Phase 6
+  ---------------------------------------------------------------------------
+  Accuracy                       0.478     0.478     0.478     0.969     0.969
+  Attack Success ↓               0.997     0.997     0.997     0.026     0.026
+  Brier Score ↓                  0.250     0.250     0.250     0.217     0.217
+  Weight Correlation             0.249     0.235     0.235     0.256     0.310
+  Anomaly Precision              0.000     0.000     0.833     0.952     0.955
+  Anomaly Recall                 0.000     0.000     0.200     0.800     0.840
+
+  Phase 1 → Phase 6 Improvement:
+    Accuracy:        0.478 → 0.969
+    Attack Success:  0.997 → 0.026
+    Anomaly Recall:  0.000 → 0.840

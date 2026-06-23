@@ -142,10 +142,12 @@ class Simulator:
         num_bots: int = 10,
         bot_groups: int = 2,
         num_true_posts: int = 30,
-        num_false_posts: int = 20,
+        num_false_posts: int = 25,
         center_lat: float = 28.6139,  # Delhi
         center_lon: float = 77.2090,
         seed: int | None = 42,
+        use_real_news: bool = True,
+        news_data_dir: str | None = None,
     ):
         if seed is not None:
             random.seed(seed)
@@ -165,15 +167,65 @@ class Simulator:
             group = i % bot_groups
             self.users.append(SimulatedUser.bot(group, center_lat, center_lon))
 
-        # Generate posts
-        self.posts: list[SimulatedPost] = []
+        self.posts, self.post_source = self._generate_posts(
+            num_true_posts=num_true_posts,
+            num_false_posts=num_false_posts,
+            center_lat=center_lat,
+            center_lon=center_lon,
+            seed=seed,
+            use_real_news=use_real_news,
+            news_data_dir=news_data_dir,
+        )
+
+    def _generate_posts(
+        self,
+        num_true_posts: int,
+        num_false_posts: int,
+        center_lat: float,
+        center_lon: float,
+        seed: int | None,
+        use_real_news: bool,
+        news_data_dir: str | None,
+    ) -> tuple[list[SimulatedPost], str]:
+        posts: list[SimulatedPost] = []
+
+        if use_real_news:
+            from simulation.news_dataset import isot_dataset_available, load_isot_sample
+
+            data_dir = news_data_dir
+            if isot_dataset_available(data_dir):
+                articles = load_isot_sample(
+                    num_true_posts,
+                    num_false_posts,
+                    seed=seed,
+                    data_dir=data_dir,
+                )
+                for article in articles:
+                    label = PostLabel.TRUE if article.is_true else PostLabel.FALSE
+                    spread = 0.02 if article.is_true else 0.03
+                    difficulty = random.uniform(0.2, 0.7) if article.is_true else random.uniform(0.4, 0.9)
+                    posts.append(SimulatedPost(
+                        author_id=random.choice(self.users).user_id,
+                        content=article.content,
+                        label=label,
+                        difficulty=difficulty,
+                        lat=center_lat + random.gauss(0, spread),
+                        lon=center_lon + random.gauss(0, spread),
+                    ))
+                return posts, "isot"
+
+            print(
+                "  Warning: ISOT dataset not found — using synthetic posts. "
+                "See backend/data/isot_fake_news/README.md"
+            )
+
         urgent_words = ["fire", "accident", "emergency", "danger", "flood"]
         normal_words = ["update", "news", "report", "information", "local"]
 
-        for i in range(num_true_posts):
+        for _ in range(num_true_posts):
             words = random.choices(normal_words, k=5) + random.choices(urgent_words, k=random.randint(0, 2))
             random.shuffle(words)
-            self.posts.append(SimulatedPost(
+            posts.append(SimulatedPost(
                 author_id=random.choice(self.users).user_id,
                 content=" ".join(words),
                 label=PostLabel.TRUE,
@@ -182,10 +234,10 @@ class Simulator:
                 lon=center_lon + random.gauss(0, 0.02),
             ))
 
-        for i in range(num_false_posts):
+        for _ in range(num_false_posts):
             words = random.choices(urgent_words, k=3) + random.choices(normal_words, k=3)
             random.shuffle(words)
-            self.posts.append(SimulatedPost(
+            posts.append(SimulatedPost(
                 author_id=random.choice(self.users).user_id,
                 content=" ".join(words),
                 label=PostLabel.FALSE,
@@ -193,6 +245,8 @@ class Simulator:
                 lat=center_lat + random.gauss(0, 0.03),
                 lon=center_lon + random.gauss(0, 0.03),
             ))
+
+        return posts, "synthetic"
 
     def generate_interactions(
         self,

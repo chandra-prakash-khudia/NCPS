@@ -18,5 +18,9 @@ services:
           property: connectionString
       - key: NCPS_AUTH_SECRET
         generateValue: true
+      - key: NCPS_IMAGE_STORAGE
+        value: cloudinary
+      - key: CLOUDINARY_URL
+        sync: false
       - key: NCPS_GOOGLE_CLIENT_ID
         sync: false

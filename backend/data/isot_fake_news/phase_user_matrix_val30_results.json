@@ -1,0 +1,143 @@
+{
+  "70 users": {
+    "P1": {
+      "accuracy": 0.7156113131912998,
+      "attack_success_rate": 0.3440738112136267,
+      "brier_score": 0.24483653792159144,
+      "weight_correlation": 0.7385623044585277,
+      "anomaly_precision": 0.0,
+      "anomaly_recall": 0.0,
+      "elapsed_s": 8.3
+    },
+    "P3": {
+      "accuracy": 0.7157597802687254,
+      "attack_success_rate": 0.3440738112136267,
+      "brier_score": 0.24515968269602584,
+      "weight_correlation": 0.7803051077000689,
+      "anomaly_precision": 0.0,
+      "anomaly_recall": 0.0,
+      "elapsed_s": 15.6
+    },
+    "P4": {
+      "accuracy": 0.7157597802687254,
+      "attack_success_rate": 0.3440738112136267,
+      "brier_score": 0.2451596408316305,
+      "weight_correlation": 0.7803053048433916,
+      "anomaly_precision": 0.0,
+      "anomaly_recall": 0.0,
+      "elapsed_s": 16.1
+    },
+    "P5": {
+      "accuracy": 0.9113651547769283,
+      "attack_success_rate": 0.10262597586941093,
+      "brier_score": 0.2086515824396335,
+      "weight_correlation": 0.7865516676724053,
+      "anomaly_precision": 0.8571428571428571,
+      "anomaly_recall": 0.75,
+      "elapsed_s": 179.0
+    },
+    "P6": {
+      "accuracy": 0.9113651547769283,
+      "attack_success_rate": 0.10262597586941093,
+      "brier_score": 0.2086680602297358,
+      "weight_correlation": 0.7947449567375262,
+      "anomaly_precision": 1.0,
+      "anomaly_recall": 0.875,
+      "elapsed_s": 179.2
+    }
+  },
+  "500 users": {
+    "P1": {
+      "accuracy": 0.7290475836983149,
+      "attack_success_rate": 0.3283179559971611,
+      "brier_score": 0.24629935909634942,
+      "weight_correlation": 0.4506842275290247,
+      "anomaly_precision": 0.0,
+      "anomaly_recall": 0.0,
+      "elapsed_s": 8.4
+    },
+    "P3": {
+      "accuracy": 0.7283794818498998,
+      "attack_success_rate": 0.3291696238466998,
+      "brier_score": 0.2468824740466725,
+      "weight_correlation": 0.5449704143806186,
+      "anomaly_precision": 0.0,
+      "anomaly_recall": 0.0,
+      "elapsed_s": 30.2
+    },
+    "P4": {
+      "accuracy": 0.7283794818498998,
+      "attack_success_rate": 0.3291696238466998,
+      "brier_score": 0.24688244354852878,
+      "weight_correlation": 0.5449712070309718,
+      "anomaly_precision": 1.0,
+      "anomaly_recall": 0.018518518518518517,
+      "elapsed_s": 29.9
+    },
+    "P5": {
+      "accuracy": 0.9083215796897038,
+      "attack_success_rate": 0.0965223562810504,
+      "brier_score": 0.21828596308916653,
+      "weight_correlation": 0.5609185501392076,
+      "anomaly_precision": 1.0,
+      "anomaly_recall": 0.7962962962962963,
+      "elapsed_s": 202.4
+    },
+    "P6": {
+      "accuracy": 0.9083958132284166,
+      "attack_success_rate": 0.0965223562810504,
+      "brier_score": 0.21829802707131857,
+      "weight_correlation": 0.5724756711910146,
+      "anomaly_precision": 1.0,
+      "anomaly_recall": 0.8518518518518519,
+      "elapsed_s": 201.3
+    }
+  },
+  "2000 users": {
+    "P1": {
+      "accuracy": 0.7189518224333754,
+      "attack_success_rate": 0.3410929737402413,
+      "brier_score": 0.2486748122426443,
+      "weight_correlation": 0.31926972680885485,
+      "anomaly_precision": 0.0,
+      "anomaly_recall": 0.0,
+      "elapsed_s": 10.0
+    },
+    "P3": {
+      "accuracy": 0.7188775888946626,
+      "attack_success_rate": 0.34123491838183106,
+      "brier_score": 0.24903450654450565,
+      "weight_correlation": 0.3711915858985263,
+      "anomaly_precision": 0.0,
+      "anomaly_recall": 0.0,
+      "elapsed_s": 54.7
+    },
+    "P4": {
+      "accuracy": 0.7188775888946626,
+      "attack_success_rate": 0.34123491838183106,
+      "brier_score": 0.24903454521540672,
+      "weight_correlation": 0.3711905620812589,
+      "anomaly_precision": 1.0,
+      "anomaly_recall": 0.018604651162790697,
+      "elapsed_s": 52.7
+    },
+    "P5": {
+      "accuracy": 0.9106970529285131,
+      "attack_success_rate": 0.0928317955997161,
+      "brier_score": 0.2199328192939009,
+      "weight_correlation": 0.3820701850092524,
+      "anomaly_precision": 0.989010989010989,
+      "anomaly_recall": 0.8372093023255814,
+      "elapsed_s": 223.6
+    },
+    "P6": {
+      "accuracy": 0.9106970529285131,
+      "attack_success_rate": 0.0928317955997161,
+      "brier_score": 0.21993442643494132,
+      "weight_correlation": 0.39548769267192263,
+      "anomaly_precision": 1.0,
+      "anomaly_recall": 0.8558139534883721,
+      "elapsed_s": 218.8
+    }
+  }
+}

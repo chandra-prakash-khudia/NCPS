@@ -18,12 +18,13 @@ async function runSimulation() {
 
   const scenario = document.getElementById('scenario-select').value;
   const phase = parseInt(document.getElementById('phase-select').value);
+  const dataset = document.getElementById('dataset-select').value;
 
   try {
     const res = await fetch(API + '/api/simulation/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenario, phase }),
+      body: JSON.stringify({ scenario, phase, dataset }),
     });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const data = await res.json();

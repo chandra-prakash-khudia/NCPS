@@ -12,9 +12,15 @@ _db_file.close()
 os.environ["NCPS_WEBAPP_DATABASE_URL"] = f"sqlite:///{_db_file.name}"
 os.environ["NCPS_ALLOW_TEST_DATABASE"] = "1"
 os.environ["NCPS_AUTO_CREATE_SCHEMA"] = "1"
+os.environ["NCPS_LOCAL_ML_ENABLED"] = "false"
 
 from webapp import app
 from webapp.db import dispose_webapp_database, init_webapp_database
+from app.config import config as ncps_config
+
+
+ncps_config.local_ml_enabled = False
+ncps_config.hf_cml_enabled = False
 
 
 @pytest.fixture()
@@ -242,6 +248,101 @@ def test_feed_and_activity_return_persisted_records(client):
     assert any(item["post_id"] == created.json()["post_id"] for item in feed.json()["posts"])
     assert activity.status_code == 200
     assert any(item["post_id"] == created.json()["post_id"] for item in activity.json()["posts"])
+
+
+def test_local_image_upload_round_trip_when_explicitly_enabled(client, monkeypatch):
+    monkeypatch.setenv("NCPS_IMAGE_STORAGE", "local")
+    auth = _register(client, "Image Reporter")
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+
+    upload = client.post(
+        "/api/post/upload-image",
+        headers=headers,
+        files={"file": ("scene.png", b"\x89PNG\r\n\x1a\nlocal-test-image", "image/png")},
+    )
+
+    assert upload.status_code == 200
+    image_url = upload.json()["image_url"]
+    assert image_url.startswith("/api/uploads/")
+
+    fetched = client.get(image_url)
+    assert fetched.status_code == 200
+    assert fetched.headers["content-type"].startswith("image/png")
+
+    from webapp.media_storage import local_upload_filename_from_url, local_upload_path
+
+    filename = local_upload_filename_from_url(image_url)
+    if filename:
+        local_upload_path(filename).unlink(missing_ok=True)
+
+
+def test_cloudinary_required_mode_does_not_fall_back_to_local_uploads(client, monkeypatch):
+    monkeypatch.setenv("NCPS_IMAGE_STORAGE", "cloudinary")
+    monkeypatch.delenv("CLOUDINARY_URL", raising=False)
+    auth = _register(client, "Cloudinary Reporter")
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+
+    upload = client.post(
+        "/api/post/upload-image",
+        headers=headers,
+        files={"file": ("scene.jpg", b"fake-jpeg-body", "image/jpeg")},
+    )
+
+    assert upload.status_code == 503
+    assert "CLOUDINARY_URL" in upload.json()["detail"]
+
+
+def test_cloudinary_mode_rejects_local_upload_image_urls(client, monkeypatch):
+    monkeypatch.setenv("NCPS_IMAGE_STORAGE", "cloudinary")
+    auth = _register(client, "Strict Image Reporter")
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+
+    created = client.post(
+        "/api/post/create",
+        headers=headers,
+        json={
+            "content": "Flooding reported near the civic center after heavy rain.",
+            "image_url": f"/api/uploads/{'a' * 32}.jpg",
+        },
+    )
+
+    assert created.status_code == 400
+    assert "Local upload image URLs are disabled" in created.json()["detail"]
+
+
+def test_missing_local_upload_references_are_hidden_from_post_payload(client, monkeypatch):
+    monkeypatch.setenv("NCPS_IMAGE_STORAGE", "local")
+    auth = _register(client, "Missing Image Reporter")
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+
+    created = client.post(
+        "/api/post/create",
+        headers=headers,
+        json={
+            "content": "Power outage reported near the district library.",
+            "image_url": f"/api/uploads/{'b' * 32}.png",
+        },
+    )
+    assert created.status_code == 200
+
+    detail = client.get(f"/api/post/{created.json()['post_id']}", headers=headers)
+    assert detail.status_code == 200
+    assert detail.json()["image_url"] is None
+
+
+def test_health_reports_cloudinary_image_storage_readiness(client, monkeypatch):
+    monkeypatch.setenv("NCPS_IMAGE_STORAGE", "cloudinary")
+    monkeypatch.delenv("CLOUDINARY_URL", raising=False)
+
+    health = client.get("/api/health")
+
+    assert health.status_code == 200
+    payload = health.json()
+    assert payload["status"] == "degraded"
+    assert payload["image_storage"]["mode"] == "cloudinary"
+    assert payload["image_storage"]["active"] == "unavailable"
+    assert payload["image_storage"]["ready"] is False
+    assert payload["image_storage"]["cloudinary_configured"] is False
 
 
 def test_startup_fails_when_database_is_not_postgresql_and_not_test(monkeypatch):

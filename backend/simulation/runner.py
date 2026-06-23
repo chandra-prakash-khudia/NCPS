@@ -47,6 +47,7 @@ from app.engine.ml_engine import (
     extract_post_features, extract_user_behavior_features,
 )
 from app.engine.signal_engine import compute_all_extended_signals
+from simulation.splits import TrainValSplit, make_train_val_split
 
 
 @dataclass
@@ -59,14 +60,76 @@ class ExperimentConfig:
     num_bots: int = 10
     bot_groups: int = 2
     num_true_posts: int = 30
-    num_false_posts: int = 20
+    num_false_posts: int = 25
     time_steps: int = 100
     interactions_per_step: int = 10
     seed: int = 42
+    use_real_news: bool = True
+    news_data_dir: str | None = None
     use_graph: bool = True
     use_spatial: bool = False
     use_ml: bool = False
     use_signals: bool = False  # Phase 6: extended signals
+    train_val_ratio: float = 0.7
+    eval_on_val_only: bool = True
+
+
+def _post_feature(
+    post: SimulatedPost,
+    post_early_votes: dict[str, list[int]],
+    post_vote_counts: dict[str, int],
+    time_steps: int,
+) -> PostFeatures:
+    pid = str(post.post_id)
+    return extract_post_features(
+        content=post.content,
+        early_votes=post_early_votes.get(pid),
+        interaction_count=post_vote_counts.get(pid, 0),
+        time_span_seconds=max(time_steps * 60, 1),
+    )
+
+
+def _post_vote_stats(
+    interactions: list[SimulatedInteraction],
+) -> tuple[dict[str, int], dict[str, list[int]]]:
+    post_vote_counts: dict[str, int] = {}
+    post_early_votes: dict[str, list[int]] = {}
+    for inter in interactions:
+        pid = str(inter.post_id)
+        post_vote_counts[pid] = post_vote_counts.get(pid, 0) + 1
+        if post_vote_counts[pid] <= 3:
+            post_early_votes.setdefault(pid, []).append(inter.vote)
+    return post_vote_counts, post_early_votes
+
+
+def _user_behavior_features(
+    user: SimulatedUser,
+    cfg: ExperimentConfig,
+    user_interactions: dict[str, list[InteractionRecord]],
+    user_action_counts: dict[str, dict[str, int]],
+    user_votes: dict[str, list[int]],
+    r_star_scores: dict[str, float],
+    coord_scores: dict[str, float],
+    location_inconsistencies: dict[str, float],
+    extended_signals: dict[str, dict],
+) -> UserBehaviorFeatures:
+    uid = str(user.user_id)
+    ext = extended_signals.get(uid, {}) if cfg.use_signals else {}
+    total_time = max(cfg.time_steps * 60.0, 1.0)
+    return extract_user_behavior_features(
+        interactions_count=len(user_interactions.get(uid, [])),
+        total_time_seconds=total_time,
+        action_counts=user_action_counts.get(uid, {"vote_up": 0, "vote_down": 0}),
+        consensus_deviation=1.0 - r_star_scores.get(uid, 0.5),
+        coordination_score=coord_scores.get(uid, 0.0),
+        location_inconsistency=location_inconsistencies.get(uid, 0.0),
+        votes=user_votes.get(uid, []),
+        navigation_deviation=ext.get("nav", 0.0),
+        device_consistency=ext.get("device", 1.0),
+        ip_consistency=ext.get("ip", 1.0),
+        session_continuity=ext.get("session", 1.0),
+        timing_irregularity=ext.get("timing", 1.0),
+    )
 
 
 def run_experiment(cfg: ExperimentConfig) -> EvaluationMetrics:
@@ -88,12 +151,27 @@ def run_experiment(cfg: ExperimentConfig) -> EvaluationMetrics:
         num_adversarial=cfg.num_adversarial, num_bots=cfg.num_bots,
         bot_groups=cfg.bot_groups, num_true_posts=cfg.num_true_posts,
         num_false_posts=cfg.num_false_posts, seed=cfg.seed,
+        use_real_news=cfg.use_real_news, news_data_dir=cfg.news_data_dir,
     )
     interactions = sim.generate_interactions(
         time_steps=cfg.time_steps,
         interactions_per_step=cfg.interactions_per_step,
     )
-    print(f"  Users: {len(sim.users)} | Posts: {len(sim.posts)} | Interactions: {len(interactions)}")
+    print(
+        f"  Users: {len(sim.users)} | Posts: {len(sim.posts)} ({sim.post_source})"
+        f" | Interactions: {len(interactions)}"
+    )
+
+    split: TrainValSplit | None = None
+    if cfg.eval_on_val_only:
+        split = make_train_val_split(
+            sim.posts, sim.users, train_ratio=cfg.train_val_ratio, seed=cfg.seed,
+        )
+        print(
+            f"  Split {cfg.train_val_ratio:.0%}/{1 - cfg.train_val_ratio:.0%}: "
+            f"{len(split.train_post_ids)} train / {len(split.val_post_ids)} val posts; "
+            f"{len(split.train_user_ids)} train / {len(split.val_user_ids)} val users"
+        )
 
     # ── Step 2: Spatial ──
     t_now = datetime.now(timezone.utc)
@@ -200,7 +278,6 @@ def run_experiment(cfg: ExperimentConfig) -> EvaluationMetrics:
     ml_memory_scores: dict[str, float | None] = {}
 
     if cfg.use_ml:
-        post_lookup = {str(p.post_id): p for p in sim.posts}
         post_early_votes: dict[str, list[int]] = {}
         post_vote_counts: dict[str, int] = {}
         for inter in interactions:
@@ -211,69 +288,71 @@ def run_experiment(cfg: ExperimentConfig) -> EvaluationMetrics:
                     post_early_votes[pid] = []
                 post_early_votes[pid].append(inter.vote)
 
-        # Train C_ML
+        train_post_ids = (
+            set(split.train_post_ids) if split else {str(p.post_id) for p in sim.posts}
+        )
+        val_post_ids = (
+            set(split.val_post_ids) if split else {str(p.post_id) for p in sim.posts}
+        )
+        train_user_ids = (
+            set(split.train_user_ids) if split else {str(u.user_id) for u in sim.users}
+        )
+        val_user_ids = (
+            set(split.val_user_ids) if split else {str(u.user_id) for u in sim.users}
+        )
+
+        # Train C_ML on train posts only; predict val posts only
         train_features, train_labels = [], []
         for post in sim.posts:
             pid = str(post.post_id)
-            if post.label == PostLabel.AMBIGUOUS:
+            if post.label == PostLabel.AMBIGUOUS or pid not in train_post_ids:
                 continue
-            feats = extract_post_features(
-                content=post.content,
-                early_votes=post_early_votes.get(pid),
-                interaction_count=post_vote_counts.get(pid, 0),
-                time_span_seconds=max(cfg.time_steps * 60, 1),
-            )
-            train_features.append(feats)
+            train_features.append(_post_feature(post, post_early_votes, post_vote_counts, cfg.time_steps))
             train_labels.append(1 if post.label == PostLabel.TRUE else 0)
         cred_model.train(train_features, train_labels)
 
         for post in sim.posts:
             pid = str(post.post_id)
-            feats = extract_post_features(
-                content=post.content, early_votes=post_early_votes.get(pid),
-                interaction_count=post_vote_counts.get(pid, 0),
-                time_span_seconds=max(cfg.time_steps * 60, 1),
-            )
-            ml_cred_scores[pid] = cred_model.predict(feats)
+            if pid in val_post_ids and post.label != PostLabel.AMBIGUOUS:
+                feats = _post_feature(post, post_early_votes, post_vote_counts, cfg.time_steps)
+                ml_cred_scores[pid] = cred_model.predict(feats)
 
-        # Memory
+        # TF-IDF memory: index train posts only; query val posts only
         memory_entries = []
         for post in sim.posts:
-            if post.label != PostLabel.AMBIGUOUS:
-                known_cred = 0.9 if post.label == PostLabel.TRUE else 0.1
-                memory_entries.append(MemoryEntry(
-                    post_id=str(post.post_id), content=post.content, credibility=known_cred,
-                ))
+            pid = str(post.post_id)
+            if post.label == PostLabel.AMBIGUOUS or pid not in train_post_ids:
+                continue
+            known_cred = 0.9 if post.label == PostLabel.TRUE else 0.1
+            memory_entries.append(MemoryEntry(
+                post_id=pid, content=post.content, credibility=known_cred,
+            ))
         memory_engine.build_memory(memory_entries)
         for post in sim.posts:
-            ml_memory_scores[str(post.post_id)] = memory_engine.query(post.content)
+            pid = str(post.post_id)
+            if pid in val_post_ids:
+                ml_memory_scores[pid] = memory_engine.query(post.content)
 
-        # Train Anom_ML (with Phase 6 extended features if available)
-        user_features_list, user_labels = [], []
-        total_time = max(cfg.time_steps * 60.0, 1.0)
+        # Anom_ML: train on train users; score val users only
+        train_user_feats, train_user_labels = [], []
+        val_user_feats: dict[str, UserBehaviorFeatures] = {}
         for user in sim.users:
             uid = str(user.user_id)
-            ext = extended_signals.get(uid, {}) if cfg.use_signals else {}
-            feats = extract_user_behavior_features(
-                interactions_count=len(user_interactions.get(uid, [])),
-                total_time_seconds=total_time,
-                action_counts=user_action_counts.get(uid, {"vote_up": 0, "vote_down": 0}),
-                consensus_deviation=1.0 - r_star_scores.get(uid, 0.5),
-                coordination_score=coord_scores.get(uid, 0.0),
-                location_inconsistency=location_inconsistencies.get(uid, 0.0),
-                votes=user_votes.get(uid, []),
-                navigation_deviation=ext.get("nav", 0.0),
-                device_consistency=ext.get("device", 1.0),
-                ip_consistency=ext.get("ip", 1.0),
-                session_continuity=ext.get("session", 1.0),
-                timing_irregularity=ext.get("timing", 1.0),
+            feats = _user_behavior_features(
+                user, cfg, user_interactions, user_action_counts, user_votes,
+                r_star_scores, coord_scores, location_inconsistencies, extended_signals,
             )
-            user_features_list.append(feats)
-            user_labels.append(1 if user.user_type in (UserType.ADVERSARIAL, UserType.BOT) else 0)
+            if uid in train_user_ids:
+                train_user_feats.append(feats)
+                train_user_labels.append(
+                    1 if user.user_type in (UserType.ADVERSARIAL, UserType.BOT) else 0
+                )
+            elif uid in val_user_ids:
+                val_user_feats[uid] = feats
 
-        anom_model.train(user_features_list, user_labels)
-        for i, user in enumerate(sim.users):
-            ml_anomaly_scores[str(user.user_id)] = anom_model.predict(user_features_list[i])
+        anom_model.train(train_user_feats, train_user_labels)
+        for uid, feats in val_user_feats.items():
+            ml_anomaly_scores[uid] = anom_model.predict(feats)
 
     # ── Step 6: Compute user states ──
     user_weights: dict[str, float] = {}
@@ -314,11 +393,22 @@ def run_experiment(cfg: ExperimentConfig) -> EvaluationMetrics:
         )
         post_credibilities[pid] = post_state.c_final
 
-    # ── Step 8: Evaluate ──
+    # ── Step 8: Evaluate (validation holdout when enabled) ──
+    eval_post_ids = (
+        set(split.val_post_ids) if split else {str(p.post_id) for p in sim.posts}
+    )
+    eval_user_ids = (
+        set(split.val_user_ids) if split else {str(u.user_id) for u in sim.users}
+    )
+
     all_creds, all_truths, false_creds = [], [], []
     for post in sim.posts:
         pid = str(post.post_id)
-        if pid in post_credibilities and post.label != PostLabel.AMBIGUOUS:
+        if (
+            pid in post_credibilities
+            and pid in eval_post_ids
+            and post.label != PostLabel.AMBIGUOUS
+        ):
             all_creds.append(post_credibilities[pid])
             all_truths.append(post.label.value)
             if post.label == PostLabel.FALSE:
@@ -331,10 +421,16 @@ def run_experiment(cfg: ExperimentConfig) -> EvaluationMetrics:
     true_rs = [u.p_correct for u in sim.users]
     weight_corr = compute_weight_correlation(estimated_ws, true_rs)
 
-    pred_anoms = [user_states[str(u.user_id)].anomaly_score > 0.3
-                  for u in sim.users if str(u.user_id) in user_states]
-    actual_anoms = [u.user_type in (UserType.ADVERSARIAL, UserType.BOT)
-                    for u in sim.users if str(u.user_id) in user_states]
+    pred_anoms = [
+        user_states[uid].anomaly_score > 0.3
+        for u in sim.users
+        if (uid := str(u.user_id)) in user_states and uid in eval_user_ids
+    ]
+    actual_anoms = [
+        u.user_type in (UserType.ADVERSARIAL, UserType.BOT)
+        for u in sim.users
+        if str(u.user_id) in eval_user_ids
+    ]
     anom_p, anom_r = compute_anomaly_detection(pred_anoms, actual_anoms)
 
     metrics = EvaluationMetrics(
