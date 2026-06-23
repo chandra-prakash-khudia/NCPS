@@ -7,9 +7,12 @@ C_ML and Anom_ML use locally trained sklearn models when available (see ml_model
 
 from __future__ import annotations
 
+import logging
 import math
 import uuid
 from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger('ncps')
 
 from app.engine.user_engine import (
     InteractionRecord,
@@ -1166,6 +1169,18 @@ class WebappStore:
                 post.is_global = True
 
         post.updated_at = t_now
+
+        # Auto-flag for moderation: low ML confidence AND low crowd confidence
+        if (
+            post.c_ml is not None and post.c_ml < 0.2
+            and state.c_final < 0.3
+            and not post.needs_review
+        ):
+            post.needs_review = True
+            logger.info(
+                'Post %s auto-flagged for review (c_ml=%.2f, c_final=%.2f)',
+                post.post_id, post.c_ml, state.c_final,
+            )
 
     def _update_reliability(self, user: User) -> None:
         """Signals 1-5: Full user state update using the engine."""

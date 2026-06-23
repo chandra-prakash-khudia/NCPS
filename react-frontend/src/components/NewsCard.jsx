@@ -39,14 +39,20 @@ const NewsCard = ({ post, showVote = true }) => {
     e.stopPropagation();
     const url = `${window.location.origin}/post/${post_id}`;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: 'NCPS report', text: headline?.slice(0, 120), url });
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-      }
       await sharePost(post_id);
-      toast.success('Link copied · share recorded');
-    } catch { /* user cancelled share */ }
+    } catch { /* ignore */ }
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'NCPS News Report',
+          text: `Credibility: ${Math.round((post.credibility || 0) * 100)}% — ${(post.content || '').slice(0, 100)}`,
+          url,
+        });
+        return;
+      } catch { /* fallthrough */ }
+    }
+    await navigator.clipboard.writeText(url);
+    toast.success('Link copied!');
   };
 
   const handleBookmark = async (e) => {

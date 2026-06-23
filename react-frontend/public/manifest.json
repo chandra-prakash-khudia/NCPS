@@ -1,0 +1,36 @@
+{
+  "name": "NCPS — News Credibility And Propagation System",
+  "short_name": "NCPS",
+  "description": "Community-powered news credibility platform. Verify, vote, and trust — mathematically.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0c10",
+  "theme_color": "#5b5bd6",
+  "orientation": "portrait-primary",
+  "categories": ["news", "social"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Feed",
+      "url": "/",
+      "description": "Open your credibility feed"
+    },
+    {
+      "name": "Report News",
+      "url": "/create",
+      "description": "Submit a news report"
+    },
+    {
+      "name": "Map",
+      "url": "/map",
+      "description": "Explore news on the map"
+    }
+  ]
+}

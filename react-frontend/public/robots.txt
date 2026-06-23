@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Allow: /welcome
+Disallow: /api/
+Sitemap: https://ncps-alpha.vercel.app/sitemap.xml

@@ -56,8 +56,27 @@ from webapp.store import DuplicateReportError, DuplicateVoteError, VALID_CATEGOR
 from webapp.pipeline import BackgroundPipeline
 
 import logging
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
-logger = logging.getLogger(__name__)
+# ── Structured logging setup ──
+logging.basicConfig(
+    level=logging.INFO,
+    format='{"time": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": %(message)s}',
+    datefmt='%Y-%m-%dT%H:%M:%SZ',
+)
+logger = logging.getLogger('ncps')
+
+# ── Rate limiter ──
+# Disabled in test environments (no real DB URL configured) so pytest tests
+# can register multiple accounts without hitting 429 Too Many Requests.
+_testing = not os.environ.get('NCPS_WEBAPP_DATABASE_URL', '').startswith('postgresql')
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=['200/minute'],
+    enabled=not _testing,
+)
 
 
 auth_scheme = HTTPBearer(auto_error=False)
@@ -95,6 +114,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NCPS — User App", version="1.0.0", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 METRICS = Counter()
 RECENT_EVENTS = deque(maxlen=80)
 ALERT_SUBSCRIBERS: dict[str, set[asyncio.Queue]] = {}
@@ -105,6 +127,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware('http')
+async def request_logging_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())[:8]
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
+    logger.info(
+        '{"request_id": "%s", "method": "%s", "path": "%s", "status": %d, "ms": %s}',
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+    response.headers['X-Request-ID'] = request_id
+    return response
 
 
 @app.middleware("http")
@@ -418,12 +458,13 @@ def health():
         "mode": "database",
         "database": get_database_kind(),
         "image_storage": storage,
-        "version": "1.0.0",
+        "version": "1.0.0-production",
     }
 
 
 @app.post("/api/auth/register")
-def auth_register(req: AuthRegisterRequest, store: WebappStore = Depends(get_store)):
+@limiter.limit('5/minute')
+def auth_register(req: AuthRegisterRequest, request: Request, store: WebappStore = Depends(get_store)):
     if store.get_account_by_email(req.email) is not None:
         raise HTTPException(status_code=409, detail="Email is already registered")
     account = store.create_account(req.name, req.email, hash_password(req.password))
@@ -431,7 +472,8 @@ def auth_register(req: AuthRegisterRequest, store: WebappStore = Depends(get_sto
 
 
 @app.post("/api/auth/login")
-def auth_login(req: AuthLoginRequest, store: WebappStore = Depends(get_store)):
+@limiter.limit('10/minute')
+def auth_login(req: AuthLoginRequest, request: Request, store: WebappStore = Depends(get_store)):
     account = store.get_account_by_email(req.email)
     if account is None or not verify_password(req.password, account.password_hash):
         raise _unauthorized("Invalid email or password")
@@ -566,8 +608,10 @@ def get_uploaded_image(filename: str):
 
 
 @app.post("/api/post/create")
+@limiter.limit('20/minute')
 def create_post(
     req: CreatePostRequest,
+    request: Request,
     account: AuthAccount = Depends(get_current_account),
     store: WebappStore = Depends(get_store),
 ):
@@ -600,8 +644,10 @@ def create_post(
 
 
 @app.post("/api/post/vote")
+@limiter.limit('60/minute')
 def vote_post(
     req: VoteRequest,
+    request: Request,
     account: AuthAccount = Depends(get_current_account),
     store: WebappStore = Depends(get_store),
 ):

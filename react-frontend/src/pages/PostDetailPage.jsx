@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEOHead from '../components/SEOHead';
 import {
   Alert, Box, Button, Card, Chip, LinearProgress, Stack, Typography, alpha,
 } from '@mui/material';
@@ -62,17 +63,27 @@ const PostDetailPage = () => {
   const { headline, deck, paragraphs } = parseArticleContent(post.content);
   const imageSrc = resolveMediaUrl(post.image_url);
 
+  const postUrl = typeof window !== 'undefined' ? `${window.location.origin}/post/${postId}` : '';
+  const credPct = post ? Math.round((post.credibility || 0) * 100) : null;
+  const seoDescription = post
+    ? `Credibility: ${credPct}% · ${(post.content || '').slice(0, 120)}…`
+    : 'View this news report on NCPS';
+
   const handleShare = async () => {
-    const url = `${window.location.origin}/post/${post.post_id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'NCPS Report', text: post.content?.slice(0, 140), url });
-      } else {
-        await navigator.clipboard?.writeText(url);
-      }
-      await sharePost(post.post_id);
-      toast.success('Share recorded.');
-    } catch {}
+    const url = `${window.location.origin}/post/${postId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'NCPS News Report',
+          text: `Credibility: ${credPct}% — ${(post?.content || '').slice(0, 100)}`,
+          url,
+        });
+        return;
+      } catch { /* fallthrough to clipboard */ }
+    }
+    await navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard!');
+    try { await sharePost(postId); } catch { /* ignore */ }
   };
 
   const handleBookmark = async () => {
@@ -102,6 +113,7 @@ const PostDetailPage = () => {
 
   return (
     <Stack spacing={1.8} className="rise-in" sx={{ maxWidth: 820, mx: 'auto' }}>
+      <SEOHead title={post?.content?.slice(0, 60)} description={seoDescription} url={postUrl} />
       {/* Back button */}
       <Button
         startIcon={<ArrowBackRoundedIcon />}

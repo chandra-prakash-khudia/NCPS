@@ -52,6 +52,7 @@ class Post(Base):
     # ── Propagation ──
     radius: Mapped[float] = mapped_column(Float, default=1000.0, doc="Current propagation radius (meters)")
     is_global: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    needs_review: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # ── Product interaction counters (social features; not used by scoring) ──
     shares_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

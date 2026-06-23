@@ -94,6 +94,9 @@ export const fetchFeed = (params = {}) =>
 export const getAnalyticsOverview = () =>
   api.get('/analytics/overview');
 
+export const getPublicStats = () =>
+  axios.get('/api/analytics/overview').catch(() => ({ data: {} }));
+
 export const getCredibilityDistribution = () =>
   api.get('/analytics/credibility-distribution');
 

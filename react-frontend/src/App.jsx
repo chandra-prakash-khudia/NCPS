@@ -1,25 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import Navbar from './components/Navbar';
-import HomePage from './pages/HomePage';
-import MapPage from './pages/MapPage';
-import CreateNewsPage from './pages/CreateNewsPage';
-import ProfilePage from './pages/ProfilePage';
-import PostDetailPage from './pages/PostDetailPage';
-import InsightsPage from './pages/InsightsPage';
-import AuthPage from './pages/AuthPage';
-import AlertsPage from './pages/AlertsPage';
-import LeaderboardPage from './pages/LeaderboardPage';
-import SettingsPage from './pages/SettingsPage';
-import ObservabilityPage from './pages/ObservabilityPage';
-import BookmarksPage from './pages/BookmarksPage';
 import LoadingSpinner from './components/LoadingSpinner';
 import CommandPalette from './components/CommandPalette';
 import OnboardingTour from './components/OnboardingTour';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
 import { getAuthToken } from './services/api';
 import { toast } from 'react-toastify';
+
+// Lazy load every page — each becomes its own JS chunk
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const CreateNewsPage = lazy(() => import('./pages/CreateNewsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
+const InsightsPage = lazy(() => import('./pages/InsightsPage'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const AlertsPage = lazy(() => import('./pages/AlertsPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ObservabilityPage = lazy(() => import('./pages/ObservabilityPage'));
+const BookmarksPage = lazy(() => import('./pages/BookmarksPage'));
+
+const PageLoader = () => (
+  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+    <CircularProgress size={36} />
+  </Box>
+);
 
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
@@ -84,28 +94,38 @@ function App() {
       {isAuthenticated && <CommandPalette />}
       {isAuthenticated && <OnboardingTour />}
       <main className={isAuthenticated ? 'main-content' : undefined}>
-        <Routes>
-          <Route
-            path="/login"
-            element={<PublicOnlyRoute><AuthPage mode="login" /></PublicOnlyRoute>}
-          />
-          <Route
-            path="/register"
-            element={<PublicOnlyRoute><AuthPage mode="register" /></PublicOnlyRoute>}
-          />
-          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
-          <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
-          <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-          <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
-          <Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          <Route path="/observability" element={<ProtectedRoute><ObservabilityPage /></ProtectedRoute>} />
-          <Route path="/create" element={<ProtectedRoute><CreateNewsPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/post/:postId" element={<ProtectedRoute><PostDetailPage /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Public routes */}
+              <Route
+                path="/welcome"
+                element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>}
+              />
+              <Route
+                path="/login"
+                element={<PublicOnlyRoute><AuthPage mode="login" /></PublicOnlyRoute>}
+              />
+              <Route
+                path="/register"
+                element={<PublicOnlyRoute><AuthPage mode="register" /></PublicOnlyRoute>}
+              />
+              {/* Protected routes */}
+              <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+              <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+              <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
+              <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
+              <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
+              <Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/observability" element={<ProtectedRoute><ObservabilityPage /></ProtectedRoute>} />
+              <Route path="/create" element={<ProtectedRoute><CreateNewsPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/post/:postId" element={<ProtectedRoute><PostDetailPage /></ProtectedRoute>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </main>
     </Box>
   );
